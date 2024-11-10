@@ -1,0 +1,72 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f0f8ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+.game-container {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+h1 {
+    color: #333;
+}
+p {
+    font-size: 1.1em;
+    color: #555;
+    text-align: left;
+}
+.question {
+    color: #333;
+}
+.word-highlight {
+    color: #007bff;
+    font-weight: bold;
+}
+form {
+    margin: 20px 0;
+    text-align: left;
+}
+.option-container {
+    margin-bottom: 10px;
+}
+input[type="radio"] {
+    margin: 10px;
+}
+button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+button:hover {
+    background-color: #45a049;
+}
+.result {
+    font-weight: bold;
+    margin: 15px 0;
+}
+a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+a:hover {
+    text-decoration: underline;
+}
