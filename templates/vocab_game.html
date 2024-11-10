@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/vocab_game.css">
+</head>
+<body style="background-image: url('https://images4.alphacoders.com/123/1232997.png'); background-size: cover;">
+    <div class="game-container" style="background: rgba(255, 255, 255, 0.8); border-radius: 10px; padding: 20px; margin: 0 auto; width: 80%; max-width: 600px;">
+        <h1>Vocabulary Game</h1>
+        <p class="question">What is the meaning of the word '<span class="word-highlight">{{ word }}</span>'?</p>
+        <form method="POST">
+            {% for option in options %}
+                <div class="option-container">
+                    <input type="radio" name="answer" value="{{ option }}" required> {{ option }}
+                </div>
+            {% endfor %}
+            <button type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
+        </form>
+        <p class="result">{{ result }}</p>
+        <a href="{{ url_for('new_word') }}">Try another word</a>
+    </div>
+</body>
+</html>
