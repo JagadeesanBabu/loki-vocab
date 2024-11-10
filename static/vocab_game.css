@@ -8,13 +8,20 @@ body {
     margin: 0;
 }
 .game-container {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
+    margin: 0 auto;
+    width: 90%;
     max-width: 600px;
-    width: 100%;
     text-align: center;
+}
+@media (max-width: 600px) {
+    .game-container {
+        padding: 15px;
+        width: 95%;
+    }
 }
 h1 {
     color: #333;
@@ -25,11 +32,8 @@ p {
     text-align: left;
 }
 .question {
-    color: #333;
-}
-.word-highlight {
-    color: #007bff;
     font-weight: bold;
+    color: blue;
 }
 form {
     margin: 20px 0;

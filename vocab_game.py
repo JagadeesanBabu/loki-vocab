@@ -18,6 +18,7 @@ def vocab_game():
     word_pair = session['word_pair']
     question_word = word_pair['word']
     result = ""
+    answer_status = ""
 
     # Generate multiple choice options
     correct_answer = word_pair['definition']
@@ -28,17 +29,18 @@ def vocab_game():
     if request.method == 'POST':
         user_answer = request.form['answer'].strip().lower()
         correct_answer = word_pair['definition'].strip().lower()
-        
+
         if user_answer == correct_answer:
-            result = f"The word {question_word} Correct! Great job!"
+            result = f"The word '{question_word}' is correct! Great job!"
+            answer_status = "correct"
         else:
             result = f"Incorrect. The correct answer is: '{word_pair['definition']}'"
-        
-        # Load a new word after submitting the answer
-        session.pop('word_pair', None)
-        return redirect(url_for('vocab_game'))
+            answer_status = "incorrect"
 
-    return render_template('vocab_game.html', word=question_word, options=options, result=result)
+        # Load a new word for the next question
+        session.pop('word_pair', None)
+
+    return render_template('vocab_game.html', word=question_word, options=options, result=result, answer_status=answer_status)
 
 # Route to get a new word
 @app.route('/new', methods=['GET'])

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lokeshwari Vocabulary Game</title>
+    <title>Vocabulary Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/vocab_game.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vocab_game.css') }}">
 </head>
 <body style="background-image: url('https://images4.alphacoders.com/123/1232997.png'); background-size: cover;">
     <div class="game-container" style="background: rgba(255, 255, 255, 0.8); border-radius: 10px; padding: 20px; margin: 0 auto; width: 80%; max-width: 600px;">
@@ -22,6 +22,21 @@
         </form>
         <p class="result">{{ result }}</p>
         <a href="{{ url_for('new_word') }}">Try another word</a>
+
+        <!-- Audio Elements -->
+        <audio id="correct-sound" src="{{ url_for('static', filename='sounds/correct.mp3') }}"></audio>
+        <audio id="incorrect-sound" src="{{ url_for('static', filename='sounds/incorrect.mp3') }}"></audio>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const answerStatus = "{{ answer_status }}";
+            if (answerStatus === "correct") {
+                document.getElementById("correct-sound").play();
+            } else if (answerStatus === "incorrect") {
+                document.getElementById("incorrect-sound").play();
+            }
+        });
+    </script>
 </body>
 </html>
