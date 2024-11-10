@@ -9,19 +9,29 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='vocab_game.css') }}">
 </head>
 <body style="background-image: url('https://images4.alphacoders.com/123/1232997.png'); background-size: cover;">
-    <div class="game-container" style="background: rgba(255, 255, 255, 0.8); border-radius: 10px; padding: 20px; margin: 0 auto; width: 80%; max-width: 600px;">
+    <div class="game-container">
         <h1>Vocabulary Game</h1>
-        <p class="question">What is the meaning of the word '<span class="word-highlight">{{ word }}</span>'?</p>
-        <form method="POST">
-            {% for option in options %}
-                <div class="option-container">
-                    <input type="radio" name="answer" value="{{ option }}" required> {{ option }}
-                </div>
-            {% endfor %}
-            <button type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
-        </form>
-        <p class="result">{{ result }}</p>
-        <a href="{{ url_for('new_word') }}">Try another word</a>
+        <div class="score-container">
+            <p>Correct Answers: <span class="score-correct">{{ score.correct }}</span></p>
+            <p>Incorrect Answers: <span class="score-incorrect">{{ score.incorrect }}</span></p>
+        </div>
+        {% if result %}
+            <p class="result">{{ result }}</p>
+            {% if show_next_question %}
+                <a href="{{ url_for('vocab_game') }}" class="next-button">Next Question</a>
+            {% endif %}
+        {% else %}
+            <p class="question">What is the meaning of the word '<span class="word-highlight">{{ word }}</span>'?</p>
+            <form method="POST">
+                {% for option in options %}
+                    <div class="option-container">
+                        <input type="radio" name="answer" value="{{ option }}" required> {{ option }}
+                    </div>
+                {% endfor %}
+                <button type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
+            </form>
+        {% endif %}
+        <a href="{{ url_for('reset_score') }}">Reset Score</a>
 
         <!-- Audio Elements -->
         <audio id="correct-sound" src="{{ url_for('static', filename='sounds/correct.mp3') }}"></audio>

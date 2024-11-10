@@ -74,3 +74,4 @@ venv/
 # Ignore settings and secrets
 config.py
 credentials.json
+flask_session/
