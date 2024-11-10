@@ -30,12 +30,15 @@ def vocab_game():
         correct_answer = word_pair['definition'].strip().lower()
         
         if user_answer == correct_answer:
-            result = "Correct! Great job!"
-            session.pop('word_pair', None)  # Remove the word pair after correct answer
+            result = f"The word {question_word} Correct! Great job!"
         else:
             result = f"Incorrect. The correct answer is: '{word_pair['definition']}'"
+        
+        # Load a new word after submitting the answer
+        session.pop('word_pair', None)
+        return redirect(url_for('vocab_game'))
 
-    return render_template('vocab_game.html', word=question_word, options=options, result=result if request.method == 'POST' else "")
+    return render_template('vocab_game.html', word=question_word, options=options, result=result)
 
 # Route to get a new word
 @app.route('/new', methods=['GET'])
