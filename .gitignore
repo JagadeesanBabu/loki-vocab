@@ -75,3 +75,5 @@ venv/
 config.py
 credentials.json
 flask_session/
+vocab-sheets-key*
+local.env

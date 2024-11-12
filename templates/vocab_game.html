@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vocabulary Game</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- External CSS and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-KyZXEAg3QhqLMpG8r+8jhAXg1eyZbvQJlnod+1Zc+VVEoUeFef8PvRL/n5gFyXUR" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vocab_game.css') }}">
 </head>
 <body style="background-image: url('https://images4.alphacoders.com/123/1232997.png'); background-size: cover;">
@@ -19,25 +21,37 @@
             <p class="result">{{ result }}</p>
             {% if show_next_question %}
                 <a href="{{ url_for('vocab_game') }}" class="next-button">Next Question</a>
+            {% else %}
+                <p>You have completed all the words!</p>
+                <a href="{{ url_for('reset_score') }}" class="reset-button">Reset Score and Start Over</a>
             {% endif %}
-        {% else %}
+        {% elif word %}
             <p class="question">What is the meaning of the word '<span class="word-highlight">{{ word }}</span>'?</p>
             <form method="POST">
                 {% for option in options %}
                     <div class="option-container">
-                        <input type="radio" name="answer" value="{{ option }}" required> {{ option }}
+                        <label>
+                            <input type="radio" name="answer" value="{{ option }}" required>
+                            {{ option }}
+                        </label>
                     </div>
                 {% endfor %}
                 <button type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
             </form>
+        {% else %}
+            <p class="result">{{ result }}</p>
+            <p>You have completed all the words!</p>
+            <a href="{{ url_for('reset_score') }}" class="reset-button">Reset Score and Start Over</a>
         {% endif %}
-        <a href="{{ url_for('reset_score') }}">Reset Score</a>
+        <!-- Reset Score Link -->
+        <a href="{{ url_for('reset_score') }}" class="reset-link">Reset Score</a>
 
         <!-- Audio Elements -->
         <audio id="correct-sound" src="{{ url_for('static', filename='sounds/correct.mp3') }}"></audio>
         <audio id="incorrect-sound" src="{{ url_for('static', filename='sounds/incorrect.mp3') }}"></audio>
     </div>
 
+    <!-- JavaScript for Audio Playback -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const answerStatus = "{{ answer_status }}";
