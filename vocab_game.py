@@ -185,12 +185,23 @@ app.config['SESSION_USE_SIGNER'] = True
 # Initialize the server-side session extension
 Session(app)
 
+from flask import Blueprint, session, redirect, url_for, render_template
+from flask_login import login_required
+
+# Define vocab_game blueprint
+vocab_game_blueprint = Blueprint('vocab_game_blueprint', __name__)
+
+@vocab_game_blueprint.route('/reset', methods=['GET'])
+@login_required
 @app.route('/reset', methods=['GET'])
 def reset_score():
     session.clear()
-    return redirect(url_for('vocab_game'))
+    return redirect(url_for('vocab_game_blueprint.vocab_game'))
 
-@app.route('/', methods=['GET', 'POST'])
+
+
+@vocab_game_blueprint.route('/', methods=['GET', 'POST'])
+@login_required
 def vocab_game():
     if 'score' not in session:
         session['score'] = {'correct': 0, 'incorrect': 0}
@@ -202,7 +213,7 @@ def vocab_game():
         options = session.get('options')
 
         if not word or not correct_answer or not options:
-            return redirect(url_for('vocab_game'))
+            return redirect(url_for('vocab_game_blueprint.vocab_game'))
 
         # Get the user's answer
         user_answer = request.form['answer'].strip()
@@ -222,6 +233,9 @@ def vocab_game():
             answer_status = "incorrect"
             session['score']['incorrect'] += 1
 
+        # Mark the session as modified to ensure changes are saved
+        session.modified = True
+        
         # Increment word count
         increment_word_count(word)
 
@@ -276,6 +290,3 @@ def vocab_game():
             score=session['score'],
             show_next_question=False
         )
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)

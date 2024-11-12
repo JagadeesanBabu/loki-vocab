@@ -77,3 +77,4 @@ credentials.json
 flask_session/
 vocab-sheets-key*
 local.env
+vocab_game.db

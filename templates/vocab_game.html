@@ -20,10 +20,10 @@
         {% if result %}
             <p class="result">{{ result }}</p>
             {% if show_next_question %}
-                <a href="{{ url_for('vocab_game') }}" class="next-button">Next Question</a>
+                <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="next-button">Next Question</a>
             {% else %}
                 <p>You have completed all the words!</p>
-                <a href="{{ url_for('reset_score') }}" class="reset-button">Reset Score and Start Over</a>
+                <a href="{{ url_for('vocab_game_blueprint.reset_score') }}" class="reset-button">Reset Score and Start Over</a>
             {% endif %}
         {% elif word %}
             <p class="question">What is the meaning of the word '<span class="word-highlight">{{ word }}</span>'?</p>
@@ -41,10 +41,10 @@
         {% else %}
             <p class="result">{{ result }}</p>
             <p>You have completed all the words!</p>
-            <a href="{{ url_for('reset_score') }}" class="reset-button">Reset Score and Start Over</a>
+            <a href="{{ url_for('vocab_game_blueprint.reset_score') }}" class="reset-button">Reset Score and Start Over</a>
         {% endif %}
         <!-- Reset Score Link -->
-        <a href="{{ url_for('reset_score') }}" class="reset-link">Reset Score</a>
+        <a href="{{ url_for('vocab_game_blueprint.reset_score') }}" class="reset-link">Reset Score</a>
 
         <!-- Audio Elements -->
         <audio id="correct-sound" src="{{ url_for('static', filename='sounds/correct.mp3') }}"></audio>
