@@ -11,7 +11,6 @@ from openai.error import RateLimitError, OpenAIError
 model = "gpt-4o-mini-2024-07-18"
 
 import os
-import base64
 
 # Load env variables for Local environment local.env
 
@@ -19,17 +18,15 @@ from dotenv import load_dotenv
 # check if local.env exists
 if os.path.exists('local.env'):
     load_dotenv('local.env')
-load_dotenv()
 
-SERVICE_ACCOUNT_FILE = 'automated-tritt-05a0903bf4d8.json'
 # Google Sheets Setup
 SCOPE = [
     'https://spreadsheets.google.com/feeds',
     'https://www.googleapis.com/auth/drive'
 ]
 
-credentials = Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE,
+credentials = Credentials.from_service_account_info(
+    json.loads(os.getenv('GOOGLE_CREDENTIALS_JSON')),
     scopes=SCOPE
 )
 gc = gspread.authorize(credentials)
