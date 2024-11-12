@@ -19,16 +19,9 @@ from dotenv import load_dotenv
 # check if local.env exists
 if os.path.exists('local.env'):
     load_dotenv('local.env')
+load_dotenv()
 
-
-credentials_base64 = os.getenv('GOOGLE_CREDENTIALS')
-if credentials_base64:
-    credentials_json = base64.b64decode(credentials_base64).decode('utf-8')
-    with open('vocab-sheets-key.json', 'w') as f:
-        f.write(credentials_json)
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'vocab-sheets-key.json'
-
-SERVICE_ACCOUNT_FILE = 'vocab-sheets-key.json'
+SERVICE_ACCOUNT_FILE = 'automated-tritt-05a0903bf4d8.json'
 # Google Sheets Setup
 SCOPE = [
     'https://spreadsheets.google.com/feeds',
@@ -51,6 +44,11 @@ def load_words_from_sheet():
 
 # OpenAI Setup
 openai.api_key = os.getenv('OPENAI_API_KEY')
+
+# exit if no API key
+if not openai.api_key:
+    print("OpenAI API key not found. Please set it in the environment variable")
+    exit()
 
 # Database Setup
 conn = sqlite3.connect('vocab_game.db', check_same_thread=False)

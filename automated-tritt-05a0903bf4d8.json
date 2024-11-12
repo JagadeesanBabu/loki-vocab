@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "automated-tritt",
+  "private_key_id": "05a0903bf4d8bf795aab7b11b21cc1257a007642",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7H5n3F8nP64we\nu3xsjOi8nKTqcBD6Ty7FL2u4oIocETLO/Ktmpy0Tj0mn25uT71SlMZTpg+ZxWc/0\nFyJWAtCYEbGiNu15x3niNUsuK2vMt3sHyOabf2BjwhTZe56xNFdO9SmZA6NKY8F7\nzowCwAO1dlxHWfzTk6gOGqBgHt3YM8/HRjLPi1HDxq+VH4U6ADpVZSC8/rVBdbxd\nHfEr8++5llwKqp/eAdKnYo71LGLVBUgWX2lRm7dkKNPFOsaa87EAyx7WjruEBpqW\nLrh0vzad8lqy8aL+tej2g8GiiZoNrQHc/bgPnkneZbl65htUFgNjhMLKK/yAT024\nac5ACqWFAgMBAAECggEATLtGrXZJwUL7sFZ9TR3zCfTKA4B01c/GhAFQEONz/tJm\nnU4rEusWpuCo+XYqM91+Pkc4oxD9XBnSFmuuHssEsnb++l+/vaI4rrPf4kzX5ZiP\nkL+nILh41C9v0UbJ6ixmaPBLYH2HZifF3XjzHOWUH8MrT+7sp+3yieYNQZ0mp1LT\nY4d8YSap3YZasLg4pLgnFe96iiEp4kBDrzw/LeanlpJVD2hYDxsdyOo6coNE8B/5\ngaWpPyDxOExACuXMyQLswuPtxXgemsDO0Zjq2Os28tKH0I2g2PBvrHR7Bk0GCHPl\nubQErE+0NKvljl1NJs8dnd4Sdb7fGzmwKh18cH8GuQKBgQDwcqMMTjdNl2HxTqMk\n6jBBRaAPCtYcdJKuWjKr855JbMXLTvCo+Xf1A9Wl/2zLpaUkw0j5YRl+iu0QUevh\nRAJJhg/kHHU4T9y2ukKyi7cWo464sJNR5XD6dfEJE46csbu2k+Siw0FWFWC/SysQ\nTJOiODPdDAZUfqE6X5PhWiwu2wKBgQDHOgN1X7XzyXlf2BJSDVBTxEfpsNPpQxB0\nuY0JL6rkfiQI/b8wkWduOSVGHdYTtr/brJArkuewYyLNYnLjSxhxlCPWQMwkZLHA\nx9zkRCf//Vjhq5erK6lAwn27EOApVfrgH2B3i7Ab2QWkVhLqOJC4uOS3wNb7pLME\nDNwwK5W7HwKBgQCzjxg9v0dDVVJZ7ryce5qvk7wUn6YHN/K16zu99z70XBtVWU0V\nEr9HJKbuwNFRPxEVZBRhzuZH/p1MO7En1y7SEyBY2/uZouITPwNB7F48tMWHHK3X\nUb1N/LeUbJtqXrvse4MZHTD0hSBrmkm9cUIquUfZwfoULUBfpDJ97mXiUwKBgHCV\nRR0QIDeK9E8IQJojsfAUbHsQFUCtSGBd9uhpCo6jBeQa2O8uTB/KpVixRafQTy1p\nn/MvykQwUZt09e2iI0cT6wiJh5NNX/HMP/Sy21PbLF4i5MuzGath/UE4MSTK1MHQ\nmWgVBUlHY9vRVFEN9CKfQYjhrdt44Dz6s3d5Od0LAoGBAJ+gV6qvLrMc2O0V6oH4\n5IrqKhwbpDJSwHlPC6ShR9tljfTiDnefmJwHwrrWpu+PhXH3cIUwutdZM/X91Hr6\nqUJn9HhFX9ambbvNpemQCci8a0gsvyhsOWACYcmWuSNF2RW34xaPsn9JH/A1u1PO\nRBIusS8JMzl/FMk7JdYAqgqM\n-----END PRIVATE KEY-----\n",
+  "client_email": "automated-tritt@automated-tritt.iam.gserviceaccount.com",
+  "client_id": "107561524441251835430",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/automated-tritt%40automated-tritt.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
