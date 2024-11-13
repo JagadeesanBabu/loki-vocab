@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 from flask_bcrypt import Bcrypt
+from vocab_game import session
 
 bcrypt = Bcrypt()
 login_manager = LoginManager()
@@ -45,6 +46,7 @@ def login():
 @login_blueprint.route('/logout')
 @login_required
 def logout():
+    session.pop('score', None)
     logout_user()
     flash('Logged out successfully.', 'info')
     return redirect(url_for('login_blueprint.login'))

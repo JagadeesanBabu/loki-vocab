@@ -195,7 +195,8 @@ vocab_game_blueprint = Blueprint('vocab_game_blueprint', __name__)
 @login_required
 @app.route('/reset', methods=['GET'])
 def reset_score():
-    session.clear()
+    # Reset the score in the session without clearing the login session
+    session['score'] = {'correct': 0, 'incorrect': 0}
     return redirect(url_for('vocab_game_blueprint.vocab_game'))
 
 
@@ -245,6 +246,7 @@ def vocab_game():
             word=word,
             options=options,
             result=result,
+            correct_answer=correct_answer,
             answer_status=answer_status,
             score=session['score'],
             show_next_question=True

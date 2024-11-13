@@ -6,19 +6,27 @@
     <title>Vocabulary Game</title>
     <!-- External CSS and Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-KyZXEAg3QhqLMpG8r+8jhAXg1eyZbvQJlnod+1Zc+VVEoUeFef8PvRL/n5gFyXUR" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vocab_game.css') }}">
 </head>
-<body style="background-image: url('https://images4.alphacoders.com/123/1232997.png'); background-size: cover;">
+<body>
     <div class="game-container">
-        <h1>Vocabulary Game</h1>
-        <div class="score-container">
-            <p>Correct Answers: <span class="score-correct">{{ score.correct }}</span></p>
-            <p>Incorrect Answers: <span class="score-incorrect">{{ score.incorrect }}</span></p>
+        <h1>Loke Vocabulary Game</h1>
+        <div class="header">
+            <a href="{{ url_for('login_blueprint.logout') }}" class="logout-link">Logout</a>
         </div>
+        
+        <div class="score-container">
+            <p><strong>Correct Answers:</strong> <span class="score-correct">{{ score.correct }}</span></p>
+            <p><strong>Incorrect Answers:</strong> <span class="score-incorrect">{{ score.incorrect }}</span></p>
+        </div>
+        
         {% if result %}
-            <p class="result">{{ result }}</p>
+            <p class="result-message">{{ 'Incorrect.' if answer_status == 'incorrect' else 'Correct!' }}</p>
+            <p class="correct-answer">The correct meaning of <strong>'{{ word }}'</strong> is:</p>
+            <div class="correct-definition">{{ correct_answer }}</div>
+            
             {% if show_next_question %}
                 <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="next-button">Next Question</a>
             {% else %}
@@ -26,41 +34,23 @@
                 <a href="{{ url_for('vocab_game_blueprint.reset_score') }}" class="reset-button">Reset Score and Start Over</a>
             {% endif %}
         {% elif word %}
-            <p class="question">What is the meaning of the word '<span class="word-highlight">{{ word }}</span>'?</p>
+            <p class="question">What is the meaning of the word "<span class="word-highlight">{{ word }}</span>"?</p>
             <form method="POST">
                 {% for option in options %}
                     <div class="option-container">
                         <label>
                             <input type="radio" name="answer" value="{{ option }}" required>
-                            {{ option }}
+                            <span class="option-text">{{ option }}</span>
                         </label>
                     </div>
                 {% endfor %}
-                <button type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
+                <button type="submit" class="submit-button"><i class="fas fa-paper-plane"></i> Submit</button>
             </form>
         {% else %}
             <p class="result">{{ result }}</p>
             <p>You have completed all the words!</p>
             <a href="{{ url_for('vocab_game_blueprint.reset_score') }}" class="reset-button">Reset Score and Start Over</a>
         {% endif %}
-        <!-- Reset Score Link -->
-        <a href="{{ url_for('vocab_game_blueprint.reset_score') }}" class="reset-link">Reset Score</a>
-
-        <!-- Audio Elements -->
-        <audio id="correct-sound" src="{{ url_for('static', filename='sounds/correct.mp3') }}"></audio>
-        <audio id="incorrect-sound" src="{{ url_for('static', filename='sounds/incorrect.mp3') }}"></audio>
     </div>
-
-    <!-- JavaScript for Audio Playback -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const answerStatus = "{{ answer_status }}";
-            if (answerStatus === "correct") {
-                document.getElementById("correct-sound").play();
-            } else if (answerStatus === "incorrect") {
-                document.getElementById("incorrect-sound").play();
-            }
-        });
-    </script>
 </body>
 </html>
