@@ -21,6 +21,8 @@ class WordCount(db.Model):
     __tablename__ = 'word_counts'
     word = db.Column(db.String(150), primary_key=True)
     count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
     @classmethod
     def increment_word_count(cls, word):
@@ -45,6 +47,9 @@ class WordData(db.Model):
     word = db.Column(db.String(150), primary_key=True)
     definition = db.Column(db.Text, nullable=False)
     incorrect_options = db.Column(JSON, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
 
     def add_word_data(self):
         exisiting_word = self.query.filter_by(word=self.word).first()

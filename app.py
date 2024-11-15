@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_migrate import Migrate
 from flask_session import Session
 from flask_login import LoginManager
 from config import Config
@@ -7,6 +8,7 @@ from routes.login_route import login_blueprint
 from routes.vocab_route import vocab_game_blueprint
 # Intialize database SQLAlchemy
 from database.db import init_db
+from database import db
 from services.auth_service import clear_session_files
 
 app = Flask(__name__)
@@ -20,9 +22,11 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login_blueprint.login'
 
-
+# Initialize SQLAlchemy
 init_db(app)
 
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # User loader function
 @login_manager.user_loader
