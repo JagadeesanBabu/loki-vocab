@@ -107,8 +107,8 @@ h1 {
     margin-left: 8px;
 }
 
-/* Submit button styling */
-.submit-button {
+/* Button styling */
+button, .next-button, .reset-button {
     background-color: #007bff;
     color: white;
     border: none;
@@ -119,10 +119,37 @@ h1 {
     cursor: pointer;
     transition: background-color 0.3s ease;
     margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.submit-button:hover {
+button:hover, .next-button:hover, .reset-button:hover {
     background-color: #0056b3;
+}
+
+button:disabled, .next-button:disabled, .reset-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+button .spinner, .next-button .spinner, .reset-button .spinner {
+    display: none;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #ffffff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+button.loading .spinner, .next-button.loading .spinner, .reset-button.loading .spinner {
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* Incorrect / Correct Answer Display */
@@ -149,24 +176,4 @@ h1 {
     border-radius: 8px;
     border: 1px solid #ddd;
     margin-top: 10px;
-}
-
-
-/* Next and Reset buttons styling */
-.next-button,
-.reset-button {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: white;
-    font-weight: 600;
-    border-radius: 5px;
-    text-decoration: none;
-    transition: background-color 0.3s ease;
-}
-
-.next-button:hover,
-.reset-button:hover {
-    background-color: #218838;
 }

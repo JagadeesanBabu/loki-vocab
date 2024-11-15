@@ -7,10 +7,13 @@ from google.oauth2.service_account import Credentials
 import openai
 import sqlite3
 from openai.error import RateLimitError, OpenAIError
+from flask import Blueprint, session, redirect, url_for, render_template
+from flask_login import login_required
+import glob
 # ChatGPT 4o mini model
 model = "gpt-4o-mini-2024-07-18"
-
 import os
+
 
 # Load env variables for Local environment local.env
 
@@ -185,8 +188,14 @@ app.config['SESSION_USE_SIGNER'] = True
 # Initialize the server-side session extension
 Session(app)
 
-from flask import Blueprint, session, redirect, url_for, render_template
-from flask_login import login_required
+
+
+
+def clear_session_files():
+    session_folder = app.config['SESSION_FILE_DIR']
+    for file in glob.glob(os.path.join(session_folder, '*')):
+        os.remove(file)
+
 
 # Define vocab_game blueprint
 vocab_game_blueprint = Blueprint('vocab_game_blueprint', __name__)
@@ -196,6 +205,8 @@ vocab_game_blueprint = Blueprint('vocab_game_blueprint', __name__)
 @app.route('/reset', methods=['GET'])
 def reset_score():
     # Reset the score in the session without clearing the login session
+    session.clear()
+    clear_session_files()
     session['score'] = {'correct': 0, 'incorrect': 0}
     return redirect(url_for('vocab_game_blueprint.vocab_game'))
 

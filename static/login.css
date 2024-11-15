@@ -88,10 +88,33 @@ h2 {
     cursor: pointer;
     transition: background-color 0.3s ease;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .login-button:hover {
     background-color: #0056b3;
+}
+
+.login-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.login-button .spinner {
+    display: none;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #ffffff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+.login-button.loading .spinner {
+    display: inline-block;
 }
 
 .extra-links {
@@ -109,6 +132,10 @@ h2 {
 
 .extra-links a:hover {
     color: #0056b3;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 @media (max-width: 500px) {
