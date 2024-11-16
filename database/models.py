@@ -1,4 +1,5 @@
 
+from sqlalchemy import func
 from .db import db
 from flask_login import UserMixin
 
@@ -37,9 +38,26 @@ class WordCount(db.Model):
     @classmethod
     def get_learnt_words(cls):
         return [word.word for word in cls.query.filter(cls.count > 0).all()]
+    
+    # New methods for summary statistics
+    @classmethod
+    def get_total_words(cls):
+        return cls.query.count()
 
-
-import json
+    @classmethod
+    def get_total_counts(cls):
+        return db.session.query(db.func.sum(cls.count)).scalar() or 0
+    # get_total_counts() returns the total number of times a word has been answered correctly ordered by the date of the last update.
+    @classmethod
+    def get_daily_counts(cls, start_date, end_date):
+        return db.session.query(
+            func.date(cls.updated_at).label('date'),
+            func.sum(cls.count).label('total_count')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date
+        ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
+    
 from sqlalchemy.dialects.postgresql import JSON
 
 class WordData(db.Model):

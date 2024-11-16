@@ -17,6 +17,8 @@ def reset_score():
 def get_next_question(unlearned_words):
     """Fetches the next question with options."""
     word = random.choice(unlearned_words)
+    # hardcoding the word for testing
+    # word = "defunct"
     # if the word is available in the DB, fetch the definition & incorrect options from the DB
     if not WordData.word_exists(word):
         correct_answer = fetch_definition(word)
