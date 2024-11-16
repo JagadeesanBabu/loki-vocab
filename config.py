@@ -21,7 +21,7 @@ class Config:
     # if its heroku environment then use jawsdb
     if os.environ.get('HEROKU') == 'True':
         print(f"Using JAWSDB")
-        SQLALCHEMY_DATABASE_URI = 'mysql://a9n3nwpru670wwuc:k90kyttze1hgam10@cxmgkzhk95kfgbq4.cbetxkdyhwsb.us-east-1.rds.amazonaws.com:3306/lfp0yym72x1n2sqs'
+        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://a9n3nwpru670wwuc:k90kyttze1hgam10@cxmgkzhk95kfgbq4.cbetxkdyhwsb.us-east-1.rds.amazonaws.com:3306/lfp0yym72x1n2sqs'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # OpenAI API key
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
