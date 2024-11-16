@@ -1,5 +1,7 @@
+from difflib import SequenceMatcher
 import json
 import random
+import re
 from flask import session
 from database.models import WordCount, WordData
 from services.auth_service import clear_session_files
@@ -35,13 +37,32 @@ def get_next_question(unlearned_words):
         'options': options
     }
 
-def check_answer(user_answer, word, correct_answer):
+def normalize_text(text):
+    """Removes special characters, extra spaces, and normalizes case."""
+    return  re.sub(r'\s+', ' ', text.strip().lower())
+
+def text_similarity(a, b):
+    """Returns a similarity ratio between two strings."""
+    return SequenceMatcher(None, a, b).ratio()
+
+def check_answer(user_answer, word, correct_answer, threshold=0.9):
     """Checks the user's answer and updates the score."""
     # trim and convert to lowercase for case-insensitive comparison
     user_answer = user_answer.strip().lower()
     correct_answer = correct_answer.strip().lower()
+
+    # Normalize the user's answer and the correct answer
+    user_answer_normalized = normalize_text(user_answer)
+    correct_answer_normalized = normalize_text(correct_answer)
+
+    # Check if the user's answer is similar to the correct answer
+    similarity_ratio = text_similarity(user_answer_normalized, correct_answer_normalized)
+    print(f"Similarity ratio: {similarity_ratio} and threshold: {threshold}")
+    print(f"User answer: {user_answer_normalized} \nCorr answer: {correct_answer_normalized}")
     
-    is_correct = user_answer == correct_answer
+    # Check if the user's answer is close to the correct answer
+    is_correct = similarity_ratio >= threshold
+
     if is_correct:
         session['score']['correct'] += 1
         result_message = f"Correct! The meaning of '{word}' is '{correct_answer}'."
