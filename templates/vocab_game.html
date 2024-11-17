@@ -15,7 +15,7 @@
         <h1>Loke Vocabulary Game</h1>
         <div class="header">
             <a href="{{ url_for('login_blueprint.logout') }}" class="logout-link">Logout</a>
-            <a href="{{ url_for('vocab_game_blueprint.dashboard') }}" class="dashboard-link">Dashboard</a>
+            <a href="{{ url_for('vocab_game_blueprint.dashboard') }}" class="dashboard-link">Dashboard <div class="spinner"></div></a>
         </div>
         
         <div class="score-container">
@@ -59,6 +59,11 @@
             button.disabled = true;
             button.classList.add('loading');
         }
+        document.getElementById('dashboard-link').addEventListener('click', function(event) {
+            var link = event.currentTarget;
+            link.classList.add('loading');
+            link.querySelector('.spinner').style.display = 'inline-block';
+        });
     </script>
 </body>
 </html>

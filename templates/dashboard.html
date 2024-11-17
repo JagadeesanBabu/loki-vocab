@@ -11,7 +11,7 @@
     <div class="container">
         <h1>Loke Progress Dashboard</h1>
         <div class="header">
-            <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link">Go2Quiz</a>
+            <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link">Go2Quiz <div class="spinner"></div></a>
         </div>
         <div class="Daily-charts">
             <h2>Loke Progress Dashboard Word Counts Over the Last Month</h2>
@@ -79,6 +79,12 @@
                 };
     
                 const dailyCountsChart = new Chart(ctx, config);
+               
+                document.getElementById('quiz-link').addEventListener('click', function(event) {
+                var link = event.currentTarget;
+                link.classList.add('loading');
+                link.querySelector('.spinner').style.display = 'inline-block';
+            });
             })();
         </script>
     
