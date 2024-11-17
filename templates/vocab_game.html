@@ -15,6 +15,7 @@
         <h1>Loke Vocabulary Game</h1>
         <div class="header">
             <a href="{{ url_for('login_blueprint.logout') }}" class="logout-link">Logout</a>
+            <a href="{{ url_for('vocab_game_blueprint.dashboard') }}" class="dashboard-link">Dashboard</a>
         </div>
         
         <div class="score-container">
@@ -49,12 +50,6 @@
                     </div>
                 {% endfor %}
                 <button type="submit" class="submit-button"><i class="fas fa-paper-plane"></i> Submit <div class="spinner"></div></button>
-            </form>
-        {% else %}
-            <p class="result">{{ result }}</p>
-            <p>You have completed all the words!</p>
-            <form method="GET" action="{{ url_for('vocab_game_blueprint.reset_score') }}" onsubmit="disableButton(this)">
-                <button type="submit" class="reset-button" id="reset-button">Reset Score and Start Over <div class="spinner"></div></button>
             </form>
         {% endif %}
     </div>

@@ -25,10 +25,12 @@ def dashboard():
     # Query total counts per day for the last 30 days
     print(f"Querying daily counts from {one_month_ago} to {today}")
     daily_counts_records = WordCount.get_daily_counts(one_month_ago, today)
+    daily_incorrect_counts_records = WordCount.get_daily_incorrect_counts(one_month_ago, today)
 
     # Extract the date and count values from the query result
     dates = [record.date for record in daily_counts_records]
     counts = [record.total_count for record in daily_counts_records]
+    incorrect_counts = [record.total_incorrect_count for record in daily_incorrect_counts_records]
 
     print(f"Dates: {dates} Counts: {counts}") 
 
@@ -48,7 +50,8 @@ def dashboard():
         word_labels=word_labels,
         word_counts=word_counts,
         dates=dates,
-        counts=counts
+        counts=counts,
+        incorrect_counts=incorrect_counts
     )
 
    # # Get today's date and date one month ago

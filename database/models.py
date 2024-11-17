@@ -67,6 +67,17 @@ class WordCount(db.Model):
             cls.updated_at <= end_date
         ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
     
+    @classmethod
+    def get_daily_incorrect_counts(cls, start_date, end_date):
+        return db.session.query(
+            func.date(cls.updated_at).label('date'),
+            func.sum(cls.incorrect_count).label('total_incorrect_count')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date
+        ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
+
+
 from sqlalchemy.dialects.postgresql import JSON
 
 class WordData(db.Model):

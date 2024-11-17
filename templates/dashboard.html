@@ -20,7 +20,7 @@
                 const ctx = document.getElementById('dailyCountsChart').getContext('2d');
                 const dates = {{ dates|tojson|safe }};
                 const counts = {{ counts|tojson|safe }};
-    
+                const incorrect_counts = {{ incorrect_counts|tojson|safe }};
                 const data = {
                     labels: dates,
                     datasets: [{
@@ -29,7 +29,14 @@
                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
-                    }]
+                    },
+                   {
+                        label: 'Incorrect Word Counts',
+                        data: incorrect_counts,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                   }]
                 };
     
                 const config = {
@@ -52,7 +59,7 @@
                                 beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: 'Total Word Count'
+                                    text: 'Count'
                                 }
                             }
                         },
@@ -60,7 +67,7 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return 'Total Words: ' + context.parsed.y;
+                                        return context.dataset.label + ': ' + context.parsed.y;
                                     }
                                 }
                             }
