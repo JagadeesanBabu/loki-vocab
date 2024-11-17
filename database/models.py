@@ -43,6 +43,10 @@ class WordCount(db.Model):
         if word_count:
             word_count.incorrect_count += 1
             db.session.commit()
+        else:
+            word_count = cls(word=word, incorrect_count=1)
+            db.session.add(word_count)
+            db.session.commit()
         
     @classmethod
     def get_learnt_words(cls):
