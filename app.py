@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from flask_session import Session
 from flask_login import LoginManager
 from config import Config
@@ -18,16 +18,26 @@ app.config.from_object(Config)
 # Initialize session and login manager
 clear_session_files()
 Session(app)
+# Initialize SQLAlchemy
+init_db(app)
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login_blueprint.login'
 
-# Initialize SQLAlchemy
-init_db(app)
 
-# Initialize Flask-Migrate
-migrate = Migrate(app, db)
 
+
+# # Automatically apply migrations
+# with app.app_context():
+#     try:
+#         upgrade()
+#         print("Database migrations applied successfully.")
+#     except Exception as e:
+#         print(f"Error applying migrations: {e}")
+        
 # User loader function
 @login_manager.user_loader
 def load_user(user_id):

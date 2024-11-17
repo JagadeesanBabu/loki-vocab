@@ -22,6 +22,7 @@ class WordCount(db.Model):
     __tablename__ = 'word_counts'
     word = db.Column(db.String(150), primary_key=True)
     count = db.Column(db.Integer, nullable=False, default=0)
+    incorrect_count = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
@@ -35,6 +36,13 @@ class WordCount(db.Model):
             db.session.add(word_count)
         db.session.commit()
         
+    @classmethod
+    def increment_incorrect_count(cls, word):
+        word_count = cls.query.filter_by(word=word).first()
+        if word_count:
+            word_count.incorrect_count += 1
+            db.session.commit()
+    
     @classmethod
     def get_learnt_words(cls):
         return [word.word for word in cls.query.filter(cls.count > 0).all()]
@@ -99,4 +107,3 @@ class WordData(db.Model):
             if count < max_count:
                 unlearned_words.append(word)
         return unlearned_words
-

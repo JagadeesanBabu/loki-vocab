@@ -73,9 +73,15 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         session['score']['incorrect'] += 1
         result_message = f"Incorrect. The correct meaning of '{word}' is '{correct_answer}'."
         answer_status = "incorrect"
+        WordCount.increment_incorrect_count(word)
 
     # Increment word count
     WordCount.increment_word_count(word)
+
+    
+    
+
+    
 
     return {
         'result_message': result_message,
