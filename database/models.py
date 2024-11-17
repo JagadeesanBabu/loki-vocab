@@ -38,11 +38,12 @@ class WordCount(db.Model):
         
     @classmethod
     def increment_incorrect_count(cls, word):
-        word_count = cls.query.filter_by(word=word).first()
+        word_count = WordCount.query.filter_by(word=word).first()
+        # Print column names of the table
         if word_count:
             word_count.incorrect_count += 1
             db.session.commit()
-    
+        
     @classmethod
     def get_learnt_words(cls):
         return [word.word for word in cls.query.filter(cls.count > 0).all()]
