@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary of Answers</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='summary.css') }}">
+</head>
+<body>
+    <div class="summary-container">
+        <h1>Summary of Answers</h1>
+        <ul>
+            {% for item in summary %}
+                <li>
+                    <strong>Question:</strong> {{ item.question }}<br>
+                    <strong>Your Answer:</strong> {{ item.user_answer }}<br>
+                    <strong>Correct Answer:</strong> {{ item.correct_answer }}
+                </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('reset_score') }}" class="reset-button">Reset Game</a>
+    </div>
+</body>
+</html>
