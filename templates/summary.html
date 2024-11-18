@@ -14,6 +14,18 @@
             <p><strong>Correct Answers:</strong> <span class="score-correct">{{ summary.correct_answers }}</span></p>
             <p><strong>Incorrect Answers:</strong> <span class="score-incorrect">{{ summary.incorrect_answers }}</span></p>
         </div>
+        <div class="incorrect-answers">
+            <h2>Incorrect Answers</h2>
+            <ul>
+                {% for answer in summary.incorrect_answer_details %}
+                    <li>
+                        <strong>Word:</strong> {{ answer.word }}<br>
+                        <strong>Your Answer:</strong> {{ answer.user_answer }}<br>
+                        <strong>Correct Answer:</strong> {{ answer.correct_answer }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
         <div class="header">
             <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">Back to Quiz <div class="spinner"></div></a>
         </div>

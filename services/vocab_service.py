@@ -77,6 +77,15 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         answer_status = "incorrect"
         WordCount.increment_incorrect_count(word)
 
+        # Store incorrect answer details in session
+        if 'incorrect_answers' not in session:
+            session['incorrect_answers'] = []
+        session['incorrect_answers'].append({
+            'word': word,
+            'user_answer': user_answer,
+            'correct_answer': correct_answer
+        })
+
     return {
         'result_message': result_message,
         'correct_answer': correct_answer,
@@ -89,8 +98,10 @@ def get_summary():
     correct_answers = session['score']['correct']
     incorrect_answers = session['score']['incorrect']
     total_answers = correct_answers + incorrect_answers
+    incorrect_answer_details = session.get('incorrect_answers', [])
     return {
         'correct_answers': correct_answers,
         'incorrect_answers': incorrect_answers,
-        'total_answers': total_answers
+        'total_answers': total_answers,
+        'incorrect_answer_details': incorrect_answer_details
     }
