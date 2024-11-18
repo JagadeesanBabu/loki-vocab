@@ -76,6 +76,14 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         result_message = f"Incorrect. The correct meaning of '{word}' is '{correct_answer}'."
         answer_status = "incorrect"
         WordCount.increment_incorrect_count(word)
+        # Store the incorrect answer details to summarize in the summary page.
+        if 'incorrect_answers' not in session:
+            session['incorrect_answers'] = []
+        session['incorrect_answers'].append({
+            'word': word,
+            'user_answer': user_answer,
+            'correct_answer': correct_answer
+        })
 
     return {
         'result_message': result_message,
@@ -92,5 +100,6 @@ def get_summary():
     return {
         'correct_answers': correct_answers,
         'incorrect_answers': incorrect_answers,
-        'total_answers': total_answers
+        'total_answers': total_answers,
+        'incorrect_answer_details': session.get('incorrect_answers', [])
     }

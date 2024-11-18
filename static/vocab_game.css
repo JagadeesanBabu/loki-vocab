@@ -27,7 +27,7 @@ body {
     margin-bottom: 20px;
 }
 
-.logout-link, .dashboard-link {
+.logout-link, .dashboard-link, .summary-link{
     text-decoration: none;
     color: #fff;
     background-color: #007bff;
@@ -37,7 +37,7 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.logout-link:hover, .dashboard-link:hover {
+.logout-link:hover, .dashboard-link:hover, .summary-link:hover {
     background-color: #0056b3;
 }
 

@@ -76,7 +76,14 @@ h1 {
     text-align: left;
     font-size: 1em;
     color: #444;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .score-container p {
@@ -96,4 +103,79 @@ h1 {
 .score-incorrect {
     color: #dc3545;
     font-weight: 600;
+}
+
+/* Incorrect answers section */
+.incorrect-answers {
+    margin: 20px 0;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.incorrect-answers h2 {
+    font-size: 1.5em;
+    color: #d32f2f;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #d32f2f;
+    padding-bottom: 5px;
+}
+
+.incorrect-answers ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.incorrect-answers li {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.incorrect-answers li strong {
+    font-weight: bold;
+    color: #555;
+}
+
+.incorrect-answers .your-answer {
+    color: #dc3545;
+    font-style: italic;
+}
+
+.incorrect-answers .correct-answer {
+    color: #28a745;
+    font-weight: bold;
+    background-color: #e8f5e9;
+    border-left: 4px solid #28a745;
+    padding: 10px;
+    margin-top: 10px;
+    display: block;
+    border-radius: 4px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .game-container {
+        padding: 20px;
+    }
+
+    .score-container {
+        font-size: 0.9em;
+    }
+
+    .incorrect-answers {
+        padding: 15px;
+    }
+
+    .incorrect-answers h2 {
+        font-size: 1.2em;
+    }
+
+    .incorrect-answers li {
+        font-size: 0.9em;
+    }
 }

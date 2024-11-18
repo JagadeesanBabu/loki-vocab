@@ -17,6 +17,18 @@
         <div class="header">
             <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">Back to Quiz <div class="spinner"></div></a>
         </div>
+        <div class="incorrect-answers">
+            <h2>Incorrect Answers</h2>
+            <ul>
+                {% for answer in summary.incorrect_answer_details %}
+                    <li>
+                        <strong>Word:</strong> {{ answer.word }}<br>
+                        <span class="your-answer"><strong>Your Answer:</strong> {{ answer.user_answer }}</span><br>
+                        <span class="correct-answer"><strong>Correct Answer:</strong> {{ answer.correct_answer }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
     <script>
         document.getElementById('quiz-link').addEventListener('click', function(event) {
