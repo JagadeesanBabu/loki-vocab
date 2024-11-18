@@ -16,6 +16,7 @@
         <div class="header">
             <a href="{{ url_for('login_blueprint.logout') }}" class="logout-link">Logout</a>
             <a href="{{ url_for('vocab_game_blueprint.dashboard') }}" id="dashboard-link" class="dashboard-link">Dashboard <div class="spinner"></div></a>
+            <a href="{{ url_for('vocab_game_blueprint.summary') }}" id="summary-link" class="summary-link">Summary <div class="spinner"></div></a>
         </div>
         
         <div class="score-container">
@@ -60,6 +61,11 @@
             button.classList.add('loading');
         }
         document.getElementById('dashboard-link').addEventListener('click', function(event) {
+            var link = event.currentTarget;
+            link.classList.add('loading');
+            link.querySelector('.spinner').style.display = 'inline-block';
+        });
+        document.getElementById('summary-link').addEventListener('click', function(event) {
             var link = event.currentTarget;
             link.classList.add('loading');
             link.querySelector('.spinner').style.display = 'inline-block';
