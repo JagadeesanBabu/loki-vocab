@@ -1,10 +1,9 @@
-
 import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, request
 from flask_login import login_required
 from database.db import db
 from database.models import WordData, WordCount
-from services.vocab_service import reset_score, get_next_question, check_answer
+from services.vocab_service import reset_score, get_next_question, check_answer, get_summary
 from services.google_sheet_service import GoogleSheetsService
 from config import Config
 
@@ -141,3 +140,9 @@ def vocab_game():
             score=session['score'],
             show_next_question=False
         )
+
+@vocab_game_blueprint.route('/summary', methods=['GET'])
+@login_required
+def summary():
+    summary_data = get_summary()
+    return render_template('summary.html', summary=summary_data)
