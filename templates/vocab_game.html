@@ -33,6 +33,22 @@
         {% endif %}
         <a href="{{ url_for('reset_score') }}">Reset Score</a>
 
+        <!-- Summary Section -->
+        {% if summary %}
+            <div class="summary-container">
+                <h2>Summary of Answers</h2>
+                <ul>
+                    {% for item in summary %}
+                        <li>
+                            <strong>Question:</strong> {{ item.question }}<br>
+                            <strong>Your Answer:</strong> {{ item.user_answer }}<br>
+                            <strong>Correct Answer:</strong> {{ item.correct_answer }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         <!-- Audio Elements -->
         <audio id="correct-sound" src="{{ url_for('static', filename='sounds/correct.mp3') }}"></audio>
         <audio id="incorrect-sound" src="{{ url_for('static', filename='sounds/incorrect.mp3') }}"></audio>

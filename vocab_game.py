@@ -31,6 +31,8 @@ def reset_score():
 def vocab_game():
     if 'score' not in session:
         session['score'] = {'correct': 0, 'incorrect': 0}
+    if 'summary' not in session:
+        session['summary'] = []
 
     if request.method == 'POST':
         # Retrieve indices from the session
@@ -65,6 +67,13 @@ def vocab_game():
             answer_status = "incorrect"
             session['score']['incorrect'] += 1
 
+        # Append to summary
+        session['summary'].append({
+            'question': question_word,
+            'user_answer': user_answer,
+            'correct_answer': correct_answer
+        })
+
         # Do not update session variables here
         # Render the response for the current answer
         return render_template(
@@ -74,7 +83,8 @@ def vocab_game():
             result=result,
             answer_status=answer_status,
             score=session['score'],
-            show_next_question=True
+            show_next_question=True,
+            summary=session['summary']
         )
 
     else:
@@ -105,7 +115,8 @@ def vocab_game():
             result="",
             answer_status="",
             score=session['score'],
-            show_next_question=False
+            show_next_question=False,
+            summary=session['summary']
         )
 
 if __name__ == '__main__':
