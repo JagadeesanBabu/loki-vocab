@@ -77,16 +77,20 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         answer_status = "incorrect"
         WordCount.increment_incorrect_count(word)
 
-
-
-    
-    
-
-    
-
     return {
         'result_message': result_message,
         'correct_answer': correct_answer,
         'answer_status': answer_status,
         'updated_score': session['score']
+    }
+
+def get_summary():
+    """Aggregates the summary of right and wrong answers."""
+    correct_answers = session['score']['correct']
+    incorrect_answers = session['score']['incorrect']
+    total_answers = correct_answers + incorrect_answers
+    return {
+        'correct_answers': correct_answers,
+        'incorrect_answers': incorrect_answers,
+        'total_answers': total_answers
     }

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vocab_game.css') }}">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Session Summary</h1>
+        <div class="score-container">
+            <p><strong>Total Answers:</strong> <span class="score-total">{{ summary.total_answers }}</span></p>
+            <p><strong>Correct Answers:</strong> <span class="score-correct">{{ summary.correct_answers }}</span></p>
+            <p><strong>Incorrect Answers:</strong> <span class="score-incorrect">{{ summary.incorrect_answers }}</span></p>
+        </div>
+        <div class="header">
+            <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">Back to Quiz <div class="spinner"></div></a>
+        </div>
+    </div>
+    <script>
+        document.getElementById('quiz-link').addEventListener('click', function(event) {
+            var link = event.currentTarget;
+            link.classList.add('loading');
+            link.querySelector('.spinner').style.display = 'inline-block';
+        });
+    </script>
+</body>
+</html>
