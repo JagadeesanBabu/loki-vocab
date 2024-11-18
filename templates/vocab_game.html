@@ -57,6 +57,33 @@
                 <button type="submit" class="reset-button" id="reset-button">Reset Score and Start Over <div class="spinner"></div></button>
             </form>
         {% endif %}
+        
+        <!-- Summary Section -->
+        {% if summary %}
+            <div class="summary-container">
+                <h2>Session Summary</h2>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Word</th>
+                            <th>Your Answer</th>
+                            <th>Correct Answer</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in summary %}
+                            <tr>
+                                <td>{{ entry.word }}</td>
+                                <td>{{ entry.user_answer }}</td>
+                                <td>{{ entry.correct_answer }}</td>
+                                <td>{{ 'Correct' if entry.status == 'correct' else 'Incorrect' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
     </div>
     <script>
         function disableButton(form) {

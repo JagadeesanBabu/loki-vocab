@@ -208,6 +208,7 @@ def reset_score():
     session.clear()
     clear_session_files()
     session['score'] = {'correct': 0, 'incorrect': 0}
+    session['summary'] = []
     return redirect(url_for('vocab_game_blueprint.vocab_game'))
 
 
@@ -217,6 +218,8 @@ def reset_score():
 def vocab_game():
     if 'score' not in session:
         session['score'] = {'correct': 0, 'incorrect': 0}
+    if 'summary' not in session:
+        session['summary'] = []
 
     if request.method == 'POST':
         # Retrieve data from the session
@@ -245,6 +248,14 @@ def vocab_game():
             answer_status = "incorrect"
             session['score']['incorrect'] += 1
 
+        # Store the question, user's answer, and correct answer in the session summary
+        session['summary'].append({
+            'word': word,
+            'user_answer': user_answer,
+            'correct_answer': correct_answer,
+            'status': answer_status
+        })
+
         # Mark the session as modified to ensure changes are saved
         session.modified = True
         
@@ -260,7 +271,8 @@ def vocab_game():
             correct_answer=correct_answer,
             answer_status=answer_status,
             score=session['score'],
-            show_next_question=True
+            show_next_question=True,
+            summary=session['summary']
         )
     else:
         # GET request: Initialize new question
@@ -278,7 +290,8 @@ def vocab_game():
                 result='Congratulations! You have learned all the words.',
                 answer_status='',
                 score=session['score'],
-                show_next_question=False
+                show_next_question=False,
+                summary=session['summary']
             )
 
         word = random.choice(unlearned_words)
@@ -301,5 +314,6 @@ def vocab_game():
             result="",
             answer_status="",
             score=session['score'],
-            show_next_question=False
+            show_next_question=False,
+            summary=session['summary']
         )
