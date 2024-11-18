@@ -14,7 +14,7 @@
             <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">Go2Quiz <div class="spinner"></div></a>
         </div>
         <div class="Daily-charts">
-            <h2>Loke Progress Dashboard Word Counts Over the Last Month</h2>
+            <h2>Loke Progress Dashboard Last Month</h2>
             <canvas id="dailyCountsChart"></canvas>
         </div>
     </div>
@@ -27,7 +27,7 @@
                 const data = {
                     labels: dates,
                     datasets: [{
-                        label: 'Total Word Counts',
+                        label: 'Correct Word Counts',
                         data: counts,
                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
                         borderColor: 'rgba(54, 162, 235, 1)',
