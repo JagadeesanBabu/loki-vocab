@@ -1,7 +1,7 @@
 
 from sqlalchemy import func
 from .db import db
-from flask_login import UserMixin
+from flask_login import UserMixin, current_user
 
 class User(UserMixin):
     def __init__(self, id, username, password):
@@ -16,6 +16,8 @@ class User(UserMixin):
         # Here is a simple example with a hardcoded user
         if user_id == "1":
             return User(id="1", username="loke", password="latha")
+        elif user_id == "2":
+            return User(id="2", username="adarsh", password="sridhar")
         return None
 
 class WordCount(db.Model):
@@ -25,29 +27,39 @@ class WordCount(db.Model):
     incorrect_count = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    updated_by = db.Column(db.String(150), nullable=True)
 
     @classmethod
     def increment_word_count(cls, word):
-        word_count = cls.query.filter_by(word=word).first()
+        # Check this word exist for the logged in user in the table by querying column word and updated_by
+
+        word_count = cls.query.filter_by(word=word).filter_by(updated_by=current_user.username).first()
         if word_count:
             word_count.count += 1
         else:
-            word_count = cls(word=word, count=1)
+            word_count = cls(word=word, count=1, updated_by=current_user.username)
             db.session.add(word_count)
         db.session.commit()
         
     @classmethod
     def increment_incorrect_count(cls, word):
-        word_count = WordCount.query.filter_by(word=word).first()
-        # Print column names of the table
-        if word_count:
-            word_count.incorrect_count += 1
-            db.session.commit()
+        print(f'Current user is: {current_user.username} word is: {word}' )
+        word_incorrect_count = cls.query.filter_by(word=word, updated_by=current_user.username).first()
+        if word_incorrect_count:
+            # Safely increment the count if the row exists
+            word_incorrect_count.incorrect_count += 1
         else:
-            word_count = cls(word=word, incorrect_count=1)
-            db.session.add(word_count)
-            db.session.commit()
+            # Create a new row if it does not exist
+            word_incorrect_count = cls(word=word, incorrect_count=1, updated_by=current_user.username)
+            db.session.add(word_incorrect_count)
         
+        # Commit the changes
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Failed to update incorrect count: {e}") 
+    
     @classmethod
     def get_learnt_words(cls):
         return [word.word for word in cls.query.filter(cls.count > 0).all()]
@@ -61,6 +73,7 @@ class WordCount(db.Model):
     def get_total_counts(cls):
         return db.session.query(db.func.sum(cls.count)).scalar() or 0
     # get_total_counts() returns the total number of times a word has been answered correctly ordered by the date of the last update.
+    
     @classmethod
     def get_daily_counts(cls, start_date, end_date):
         return db.session.query(
