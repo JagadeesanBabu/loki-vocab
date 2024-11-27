@@ -2,6 +2,7 @@
 from sqlalchemy import func
 from .db import db
 from flask_login import UserMixin, current_user
+from datetime import datetime, timedelta
 
 class User(UserMixin):
     def __init__(self, id, username, password):
@@ -30,15 +31,22 @@ class WordCount(db.Model):
     updated_by = db.Column(db.String(150), nullable=True)
 
     @classmethod
+    def get_todays_user_word_count(cls):
+        day_ago = datetime.now() - timedelta(days=1)
+        print(f"Current user is: {current_user.username} and today's date is: {func.current_date()}")
+        return cls.query.filter(cls.updated_at >= day_ago, cls.updated_by == current_user.username ).count()
+    
+    @classmethod
     def increment_word_count(cls, word):
         # Check this word exist for the logged in user in the table by querying column word and updated_by
 
-        word_count = cls.query.filter_by(word=word).filter_by(updated_by=current_user.username).first()
-        if word_count:
-            word_count.count += 1
+        word_count_row = cls.query.filter_by(word=word).filter_by(updated_by=current_user.username).first()
+        if word_count_row:
+            word_count_row.count += 1
+            word_count_row.updated_at = db.func.now()
         else:
-            word_count = cls(word=word, count=1, updated_by=current_user.username)
-            db.session.add(word_count)
+            word_count_row = cls(word=word, count=1, updated_by=current_user.username, updated_at=db.func.now())
+            db.session.add(word_count_row)
         db.session.commit()
         
     @classmethod
@@ -48,9 +56,10 @@ class WordCount(db.Model):
         if word_incorrect_count:
             # Safely increment the count if the row exists
             word_incorrect_count.incorrect_count += 1
+            word_incorrect_count.updated_at = db.func.now()
         else:
             # Create a new row if it does not exist
-            word_incorrect_count = cls(word=word, incorrect_count=1, updated_by=current_user.username)
+            word_incorrect_count = cls(word=word, incorrect_count=1, updated_by=current_user.username, updated_at=db.func.now())
             db.session.add(word_incorrect_count)
         
         # Commit the changes
@@ -88,12 +97,22 @@ class WordCount(db.Model):
     def get_daily_incorrect_counts(cls, start_date, end_date):
         return db.session.query(
             func.date(cls.updated_at).label('date'),
-            func.sum(cls.incorrect_count).label('total_incorrect_count')
+            func.sum(cls.incorrect_count).label('total_incorrect_count'),
+            cls.updated_by.label('updated_by')
         ).filter(
             cls.updated_at >= start_date,
             cls.updated_at <= end_date
         ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
-
+    
+    @classmethod
+    def get_daily_incorrect_counts_by_user(cls, start_date, end_date):
+        return db.session.query(
+            func.date(cls.updated_at).label('date'),
+            func.sum(cls.incorrect_count).label('total_incorrect_count')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date
+        ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
 
 from sqlalchemy.dialects.postgresql import JSON
 

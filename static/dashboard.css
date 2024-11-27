@@ -166,3 +166,34 @@ th, td {
 th {
     background-color: #f2f2f2;
 }
+
+.limit-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffdddd;
+    color: #721c24;
+    border: 1px solid #f5c2c7;
+    padding: 20px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.limit-message.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.limit-message.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-20px);
+}

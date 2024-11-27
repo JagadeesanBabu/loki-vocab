@@ -9,13 +9,20 @@
 </head>
 <body>
     <div class="container">
-        <h1>Loke Progress Dashboard</h1>
+        <h1>Progress Dashboard</h1>
         <div class="header">
             <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">Go2Quiz <div class="spinner"></div></a>
             <a href="{{ url_for('vocab_game_blueprint.summary') }}" class="summary-link" id="summary-link">Summary <div class="spinner"></div></a>
         </div>
+        <!-- Adding Limit Reached Notification -->
+        {% if limit_reached %}
+        <div id="limit-message" class="limit-message hidden">
+            <h2>{{logged_user}} you've done a great Job Today !!!</h2>
+            <p>You have reached the limit of 50 quizzes per day. Please come back tomorrow.</p>
+        </div>
+        {% endif %}
         <div class="Daily-charts">
-            <h2>Loke Progress Dashboard Last Month</h2>
+            <h2>Progress Dashboard Last Month</h2>
             <canvas id="dailyCountsChart"></canvas>
         </div>
     </div>
@@ -37,9 +44,9 @@
                    {
                         label: 'Incorrect Word Counts',
                         data: incorrect_counts,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
+                                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
                    }]
                 };
     
@@ -91,6 +98,26 @@
                 link.classList.add('loading');
                 link.querySelector('.spinner').style.display = 'inline-block';
             });
+                document.addEventListener('DOMContentLoaded', () => {
+                const limitMessage = document.getElementById('limit-message');
+
+                if (limitMessage) {
+                    console.log('Limit message found, toggling visibility.');
+
+                    // Show the notification
+                    limitMessage.classList.remove('hidden');
+                    limitMessage.classList.add('visible');
+
+                    // Hide the notification after 5 seconds
+                    setTimeout(() => {
+                        console.log('Hiding limit message.');
+                        limitMessage.classList.remove('visible');
+                        limitMessage.classList.add('hidden');
+                    }, 5000);
+                } else {
+                    console.log('Limit message not found in DOM.');
+                }
+});
             })();
         </script>
     
