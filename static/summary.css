@@ -27,7 +27,7 @@ body {
     margin-bottom: 20px;
 }
 
-.quiz-link {
+.logout-link, .quiz-link {
     text-decoration: none;
     color: #fff;
     background-color: #007bff;
@@ -37,11 +37,11 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.quiz-link:hover {
+.logout-link:hover, quiz-link:hover {
     background-color: #0056b3;
 }
 
-.quiz-link .spinner {
+.logout-link .spinner, .quiz-link .spinner {
     display: none;
     margin-left: 10px;
     border: 2px solid #fff;
@@ -52,7 +52,7 @@ body {
     animation: spin 0.6s linear infinite;
 }
 
-.quiz-link.loading {
+.logout-link.loading, .quiz-link.loading {
     pointer-events: none;
     opacity: 0.7;
 }
