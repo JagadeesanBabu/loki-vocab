@@ -30,6 +30,10 @@ class WordCount(db.Model):
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
     updated_by = db.Column(db.String(150), nullable=True)
 
+    __table_args__ = (
+        db.PrimaryKeyConstraint('word', 'updated_by'),
+    )
+
     @classmethod
     def get_todays_user_word_count(cls):
         day_ago = datetime.now() - timedelta(days=1)
