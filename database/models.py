@@ -88,14 +88,15 @@ class WordCount(db.Model):
     # get_total_counts() returns the total number of times a word has been answered correctly ordered by the date of the last update.
     
     @classmethod
-    def get_daily_counts(cls, start_date, end_date):
+    def get_daily_correct_counts_by_user(cls, start_date, end_date):
         return db.session.query(
             func.date(cls.updated_at).label('date'),
-            func.sum(cls.count).label('total_count')
+            func.sum(cls.count).label('total_count'),
+            cls.updated_by.label('updated_by')
         ).filter(
             cls.updated_at >= start_date,
             cls.updated_at <= end_date
-        ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
+        ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
     
     @classmethod
     def get_daily_incorrect_counts(cls, start_date, end_date):
@@ -110,13 +111,15 @@ class WordCount(db.Model):
     
     @classmethod
     def get_daily_incorrect_counts_by_user(cls, start_date, end_date):
-        return db.session.query(
+        daily_incorrect_count_by_user = db.session.query(
             func.date(cls.updated_at).label('date'),
+            cls.updated_by.label('updated_by'),
             func.sum(cls.incorrect_count).label('total_incorrect_count')
         ).filter(
             cls.updated_at >= start_date,
             cls.updated_at <= end_date
         ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
+        return daily_incorrect_count_by_user
 
 from sqlalchemy.dialects.postgresql import JSON
 

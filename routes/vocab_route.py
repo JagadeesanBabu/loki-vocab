@@ -22,23 +22,29 @@ def dashboard():
 
     # Query total counts per day for the last 30 days
     print(f"Querying daily counts from {one_month_ago} to {today}")
-    daily_counts_records = WordCount.get_daily_counts(one_month_ago, today)
+    daily_correct_counts_records_by_user = WordCount.get_daily_correct_counts_by_user(one_month_ago, today)
     daily_incorrect_counts_records = WordCount.get_daily_incorrect_counts(one_month_ago, today)
     daily_incorrect_counts_records_by_user = WordCount.get_daily_incorrect_counts_by_user(one_month_ago, today)
 
 
     # Extract the date and count values from the query result
-    dates = [record.date for record in daily_counts_records]
-    counts = [record.total_count for record in daily_counts_records]
+    dates = list({a.date for a in daily_correct_counts_records_by_user})
+    counts = [record.total_count for record in daily_correct_counts_records_by_user]
     incorrect_counts = [record.total_incorrect_count for record in daily_incorrect_counts_records]
-    incorrect_counts_by_user = {record[0]: record[1] for record in daily_incorrect_counts_records_by_user}
+    correct_counts_by_loke = [b for a,b,c in daily_correct_counts_records_by_user if c == 'loke']
+    correct_counts_by_adarsh = [b for a,b,c in daily_correct_counts_records_by_user if c == 'adarsh']
+    incorrect_counts_by_loke = [c for a,b,c in daily_incorrect_counts_records_by_user if b == 'loke']
+    incorrect_counts_by_adarsh = [c for a,b,c in daily_incorrect_counts_records_by_user if b == 'adarsh']
+
     limit_reached = request.args.get('limit_reached', 'false').lower() == 'true'
     # Capitalize the first letter of the username
     logged_user = current_user.username
     logged_user = logged_user[0].upper() + logged_user[1:]
     print(f"Dates: {dates} Counts: {counts}") 
-    print(f"Incorrect Counts: {incorrect_counts}")
-    print(f"Incorrect Counts by User: {incorrect_counts_by_user}")
+    print(f"Correct Counts by Loke: {correct_counts_by_loke}")
+    print(f"Correct Counts by Adarsh: {correct_counts_by_adarsh}")
+    print(f"Incorrect Counts by user: {incorrect_counts_by_loke}")
+    print(f"Incorrect Counts by user: {incorrect_counts_by_adarsh}")
 
 
     """Displays the user's progress."""
@@ -58,7 +64,10 @@ def dashboard():
         dates=dates,
         counts=counts,
         incorrect_counts=incorrect_counts,
-        incorrect_counts_by_user=incorrect_counts_by_user,
+        incorrect_counts_by_user_adarsh=incorrect_counts_by_adarsh,
+        incorrect_counts_by_user_loke=incorrect_counts_by_loke,
+        correct_counts_by_user_loke=correct_counts_by_loke,
+        correct_counts_by_user_adarsh=correct_counts_by_adarsh,
         limit_reached=limit_reached,
         logged_user=logged_user
 

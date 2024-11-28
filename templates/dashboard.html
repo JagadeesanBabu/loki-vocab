@@ -32,23 +32,41 @@
                 const ctx = document.getElementById('dailyCountsChart').getContext('2d');
                 const dates = {{ dates|tojson|safe }};
                 const counts = {{ counts|tojson|safe }};
-                const incorrect_counts = {{ incorrect_counts|tojson|safe }};
+                const correct_counts_by_loke = {{ correct_counts_by_user_loke|tojson|safe }};
+                const correct_counts_by_adarsh = {{ correct_counts_by_user_adarsh|tojson|safe }};
+                const incorrect_counts_by_user_adarsh = {{ incorrect_counts_by_user_adarsh|tojson|safe }};
+                const incorrect_counts_by_user_loke = {{ incorrect_counts_by_user_loke|tojson|safe }};
                 const data = {
                     labels: dates,
                     datasets: [{
-                        label: 'Correct Word Counts',
-                        data: counts,
+                        label: 'Correct Word Counts by Loke',
+                        data: correct_counts_by_loke,
                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
                     },
+                    {
+                        label: 'Correct Word Counts by Adarsh',
+                        data: correct_counts_by_adarsh,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
                    {
-                        label: 'Incorrect Word Counts',
-                        data: incorrect_counts,
-                                backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                borderWidth: 1
-                   }]
+                        label: 'Incorrect Word Counts by Adarsh',
+                        data: incorrect_counts_by_user_adarsh,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                   },
+                     {
+                        label: 'Incorrect Word Counts by Loke',
+                        data: incorrect_counts_by_user_loke,
+                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                     }
+                ]
                 };
     
                 const config = {
