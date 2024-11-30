@@ -33,6 +33,8 @@ class DashboardService:
         # Get actual incorrect counts from the database
         actual_counts: dict = WordCount.get_daily_incorrect_counts_by_user(start_date, end_date)
 
+        print(f"Actual incorrect counts: {actual_counts}")
+
         # Fill missing data with zeros
         result_incorrect_count_by_user_by_date = [{
             "date": entry["date"],
@@ -56,6 +58,8 @@ class DashboardService:
 
         # Get actual correct counts from the database
         actual_counts: dict = WordCount.get_daily_correct_counts_by_user(start_date, end_date)
+
+        print(f"Actual correct counts: {actual_counts}")
 
         # Fill missing data with zeros
         result_correct_count_by_user_by_date = [{
