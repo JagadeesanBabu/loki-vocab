@@ -77,3 +77,4 @@ flask_session/
 vocab-sheets-key*
 local.env
 vocab_game.db
+frontend/node_modules/*

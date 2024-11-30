@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from flask_restful import Api, Resource
 from flask_login import login_required, current_user
 from database.models import WordData, WordCount
 from services.vocab_service import get_next_question, check_answer, get_summary
 from services.dashboard_service import DashboardService
+from datetime import date, timedelta
 
 api_blueprint = Blueprint('api', __name__)
 api = Api(api_blueprint)
@@ -36,8 +37,8 @@ class SummaryResource(Resource):
 class DashboardResource(Resource):
     @login_required
     def get(self):
-        today = datetime.date.today() + datetime.timedelta(days=1)
-        one_month_ago = today - datetime.timedelta(days=30)
+        today = date.today() + timedelta(days=1)
+        one_month_ago = today - timedelta(days=30)
         daily_correct_counts_records_by_user = DashboardService.get_correct_counts_by_user(one_month_ago, today)
         daily_incorrect_counts_records = DashboardService.get_incorrect_counts_by_user(one_month_ago, today)
         return jsonify({
