@@ -50,6 +50,8 @@ class DashboardService:
                 "total_incorrect_count": int(actual_count) # Use tuple keys to match `actual_counts`
             })
         print(f"Result incorrect count by user by date: {result_incorrect_count_by_user_by_date}")
+        # Sort the results by date in ascending order
+        result_incorrect_count_by_user_by_date = sorted(result_incorrect_count_by_user_by_date, key=lambda x: x["date"])
         return result_incorrect_count_by_user_by_date
 
     @classmethod
@@ -79,4 +81,6 @@ class DashboardService:
                 "total_correct_count": int(actual_count)  # Use tuple keys to match `actual_counts`
             })
         print(f"Result correct count by user by date: {result_correct_count_by_user_by_date}")
+        # Sort the results by date in ascending order
+        result_correct_count_by_user_by_date = sorted(result_correct_count_by_user_by_date, key=lambda x: x["date"])
         return result_correct_count_by_user_by_date
