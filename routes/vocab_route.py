@@ -23,7 +23,7 @@ def vocab_game():
     # Check if the user has attempted 50 questions from the DB and redirect to dashboard saying you have reached the limit
     todays_user_word_count = WordCount.get_todays_user_word_count()
     print(f"Today's user word count: {str(todays_user_word_count)}")
-    if todays_user_word_count >= 150:
+    if todays_user_word_count >= 60:
         return redirect(url_for('dashboard_blueprint.dashboard', limit_reached=True))
 
     if request.method == 'POST':
