@@ -1,4 +1,3 @@
-
 from sqlalchemy import func
 from .db import db
 from flask_login import UserMixin, current_user
