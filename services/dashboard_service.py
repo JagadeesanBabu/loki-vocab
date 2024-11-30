@@ -18,7 +18,9 @@ class DashboardService:
         users = [str(user) for user in unique_users]
 
         # Generate all combinations of dates and users
-        return [{"date": date, "user": user} for date, user in product(dates, users)]
+        date_user_combinations = [{"date": date, "user": user} for date, user in product(dates, users)]
+        print(f"Date user combinations: {date_user_combinations}")
+        return date_user_combinations
 
     @classmethod
     def get_incorrect_counts_by_user(cls, start_date, end_date) -> list:
@@ -39,6 +41,8 @@ class DashboardService:
                 (entry["date"], entry["user"]), 0  # Use tuple keys to match `actual_counts`
             )
         } for entry in date_user_combinations]
+
+        print(f"Result incorrect count by user by date: {result_incorrect_count_by_user_by_date}")
 
         return result_incorrect_count_by_user_by_date
 
@@ -61,5 +65,7 @@ class DashboardService:
                 (entry["date"], entry["user"]), 0  # Use tuple keys to match `actual_counts`
             )
         } for entry in date_user_combinations]
+
+        print(f"Result correct count by user by date: {result_correct_count_by_user_by_date}")
 
         return result_correct_count_by_user_by_date
