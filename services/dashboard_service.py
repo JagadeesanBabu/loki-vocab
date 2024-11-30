@@ -47,7 +47,7 @@ class DashboardService:
             result_incorrect_count_by_user_by_date.append({
                 "date": entry["date"],
                 "user": entry["user"],
-                "total_incorrect_count": actual_count # Use tuple keys to match `actual_counts`
+                "total_incorrect_count": int(actual_count) # Use tuple keys to match `actual_counts`
             })
         print(f"Result incorrect count by user by date: {result_incorrect_count_by_user_by_date}")
         return result_incorrect_count_by_user_by_date
@@ -76,7 +76,7 @@ class DashboardService:
             result_correct_count_by_user_by_date.append({
                 "date": entry["date"],
                 "user": entry["user"],
-                "total_correct_count": actual_count  # Use tuple keys to match `actual_counts`
+                "total_correct_count": int(actual_count)  # Use tuple keys to match `actual_counts`
             })
         print(f"Result correct count by user by date: {result_correct_count_by_user_by_date}")
         return result_correct_count_by_user_by_date
