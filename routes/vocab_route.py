@@ -1,7 +1,6 @@
 import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, request
-from flask_login import login_required
-from database.db import db
+from flask_login import login_required, current_user
 from database.models import WordData, WordCount
 from services.vocab_service import reset_score, get_next_question, check_answer, get_summary
 from services.google_sheet_service import GoogleSheetsService
@@ -15,55 +14,17 @@ def reset_score_route():
     reset_score()
     return redirect(url_for('vocab_game_blueprint.vocab_game'))
 
-@vocab_game_blueprint.route('/dashboard', methods=['GET'])
-@login_required
-def dashboard():
-    today = datetime.date.today() + datetime.timedelta(days=1)
-    one_month_ago = today - datetime.timedelta(days=30)
-
-    # Query total counts per day for the last 30 days
-    print(f"Querying daily counts from {one_month_ago} to {today}")
-    daily_counts_records = WordCount.get_daily_counts(one_month_ago, today)
-    daily_incorrect_counts_records = WordCount.get_daily_incorrect_counts(one_month_ago, today)
-
-    # Extract the date and count values from the query result
-    dates = [record.date for record in daily_counts_records]
-    counts = [record.total_count for record in daily_counts_records]
-    incorrect_counts = [record.total_incorrect_count for record in daily_incorrect_counts_records]
-
-    print(f"Dates: {dates} Counts: {counts}") 
-
-
-    """Displays the user's progress."""
-    words = WordCount.query.all()
-    total_words = WordCount.get_total_words
-    total_counts = WordCount.get_total_counts()
-    learnt_words = WordCount.get_learnt_words()
-    word_labels = [word.word for word in words]
-    word_counts = [word.count for word in words]
-    return render_template(
-        'dashboard.html',
-        total_words=total_words,
-        total_counts=total_counts,
-        learnt_words=learnt_words,
-        word_labels=word_labels,
-        word_counts=word_counts,
-        dates=dates,
-        counts=counts,
-        incorrect_counts=incorrect_counts
-    )
-
-   # # Get today's date and date one month ago
-
-   
-
-
 @vocab_game_blueprint.route('/', methods=['GET', 'POST'])
 @login_required
 def vocab_game():
     """Handles the vocabulary game logic."""
     if 'score' not in session:
         session['score'] = {'correct': 0, 'incorrect': 0}
+    # Check if the user has attempted 50 questions from the DB and redirect to dashboard saying you have reached the limit
+    todays_user_word_count = WordCount.get_todays_user_word_count()
+    print(f"Today's user word count: {str(todays_user_word_count)}")
+    if todays_user_word_count >= 60:
+        return redirect(url_for('dashboard_blueprint.dashboard', limit_reached=True))
 
     if request.method == 'POST':
         # Retrieve session data

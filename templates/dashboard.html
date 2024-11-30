@@ -9,90 +9,145 @@
 </head>
 <body>
     <div class="container">
-        <h1>Loke Progress Dashboard</h1>
+        <h1>Progress Dashboard</h1>
         <div class="header">
-            <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">Go2Quiz <div class="spinner"></div></a>
-            <a href="{{ url_for('vocab_game_blueprint.summary') }}" class="summary-link" id="summary-link">Summary <div class="spinner"></div></a>
+            <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">
+                Go2Quiz <div class="spinner"></div>
+            </a>
+            <a href="{{ url_for('vocab_game_blueprint.summary') }}" class="summary-link" id="summary-link">
+                Summary <div class="spinner"></div>
+            </a>
+            <a href="{{ url_for('login_blueprint.logout') }}" class="logout-link" id="logout-link">
+                Logout <div class="spinner"></div>
+            </a>
         </div>
+
+        <!-- Adding Limit Reached Notification -->
+        {% if limit_reached %}
+        <div id="limit-message" class="limit-message">
+            <h2>{{ logged_user }} you've done a great Job Today !!!</h2>
+            <p>You have reached the limit of 50 quizzes per day. Please come back tomorrow.</p>
+        </div>
+        {% endif %}
+
         <div class="Daily-charts">
-            <h2>Loke Progress Dashboard Last Month</h2>
+            <h2>Progress Dashboard Last Month</h2>
             <canvas id="dailyCountsChart"></canvas>
         </div>
     </div>
-        <script>
-            (function() {
-                const ctx = document.getElementById('dailyCountsChart').getContext('2d');
-                const dates = {{ dates|tojson|safe }};
-                const counts = {{ counts|tojson|safe }};
-                const incorrect_counts = {{ incorrect_counts|tojson|safe }};
-                const data = {
-                    labels: dates,
-                    datasets: [{
-                        label: 'Correct Word Counts',
-                        data: counts,
+
+    <script>
+        (function () {
+            const ctx = document.getElementById('dailyCountsChart').getContext('2d');
+            const dates = {{ dates|tojson|safe }};
+            const correct_counts_by_loke = {{ correct_counts_by_user_loke|tojson|safe }};
+            const correct_counts_by_adarsh = {{ correct_counts_by_user_adarsh|tojson|safe }};
+            const incorrect_counts_by_user_adarsh = {{ incorrect_counts_by_user_adarsh|tojson|safe }};
+            const incorrect_counts_by_user_loke = {{ incorrect_counts_by_user_loke|tojson|safe }};
+
+            const data = {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Correct Word Counts by Loke',
+                        data: correct_counts_by_loke,
                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
                     },
-                   {
-                        label: 'Incorrect Word Counts',
-                        data: incorrect_counts,
+                    {
+                        label: 'Correct Word Counts by Adarsh',
+                        data: correct_counts_by_adarsh,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Incorrect Word Counts by Adarsh',
+                        data: incorrect_counts_by_user_adarsh,
                         backgroundColor: 'rgba(255, 99, 132, 0.6)',
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 1
-                   }]
-                };
-    
-                const config = {
-                    type: 'bar',
-                    data: data,
-                    options: {
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Date'
-                                },
-                                ticks: {
-                                    autoSkip: true,
-                                    maxRotation: 90,
-                                    minRotation: 45
-                                }
+                    },
+                    {
+                        label: 'Incorrect Word Counts by Loke',
+                        data: incorrect_counts_by_user_loke,
+                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'bar',
+                data: data,
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
                             },
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Count'
-                                }
+                            ticks: {
+                                autoSkip: true,
+                                maxRotation: 90,
+                                minRotation: 45
                             }
                         },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': ' + context.parsed.y;
-                                    }
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + context.parsed.y;
                                 }
                             }
                         }
                     }
-                };
-    
-                const dailyCountsChart = new Chart(ctx, config);
-               
-                document.getElementById('quiz-link').addEventListener('click', function(event) {
-                var link = event.currentTarget;
-                link.classList.add('loading');
-                link.querySelector('.spinner').style.display = 'inline-block';
+                }
+            };
+
+            const dailyCountsChart = new Chart(ctx, config);
+
+            const addLoadingEffect = (id) => {
+                document.getElementById(id).addEventListener('click', function (event) {
+                    const link = event.currentTarget;
+                    link.classList.add('loading');
+                    link.querySelector('.spinner').style.display = 'inline-block';
+                });
+            };
+
+            addLoadingEffect('quiz-link');
+            addLoadingEffect('summary-link');
+            addLoadingEffect('logout-link');
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const limitMessage = document.getElementById('limit-message');
+
+                if (limitMessage) {
+                    console.log('Limit message found, toggling visibility.');
+                    limitMessage.classList.remove('hidden');
+                    limitMessage.classList.add('visible');
+
+                    // Hide the notification after 10 seconds
+                    setTimeout(() => {
+                        console.log('Hiding limit message.');
+                        limitMessage.classList.remove('visible');
+                        limitMessage.classList.add('hidden');
+                    }, 10000);
+                } else {
+                    console.log('Limit message not found in DOM.');
+                }
             });
-                document.getElementById('summary-link').addEventListener('click', function(event) {
-                var link = event.currentTarget;
-                link.classList.add('loading');
-                link.querySelector('.spinner').style.display = 'inline-block';
-            });
-            })();
-        </script>
-    
+        })();
+    </script>
 </body>
 </html>

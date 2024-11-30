@@ -4,15 +4,17 @@ from database.models import User
 
 import os, glob
 
-def authenticate_user(username, password):
+def authenticate_user(username, password) -> User:
     if username == "loke" and password == "latha":
         return User(id="1", username="loke", password="latha")
+    elif username == "adarsh" and password == "sridhar":
+        return User(id="2", username="adarsh", password="sridhar")
     return None
 
 def load_user(user_id):
     return User.get(user_id)
 
-def clear_session_files():
+def clear_session_files() -> None:
     session_folder = os.path.join(os.path.dirname(__file__), '..', 'flask_session')
     if not os.path.exists(session_folder):
         print(f"Session folder {session_folder} does not exist.")
