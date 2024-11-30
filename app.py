@@ -6,6 +6,7 @@ from config import Config
 from database.models import User
 from routes.login_route import login_blueprint
 from routes.vocab_route import vocab_game_blueprint
+from routes.dashboard_route import dashboard_blueprint
 # Intialize database SQLAlchemy
 from database.db import init_db
 from database import db
@@ -46,6 +47,7 @@ def load_user(user_id):
 # Register Blueprints
 app.register_blueprint(login_blueprint)
 app.register_blueprint(vocab_game_blueprint)
+app.register_blueprint(dashboard_blueprint)
 
 # # Initialize database
 # init_db(app)

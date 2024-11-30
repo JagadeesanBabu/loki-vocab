@@ -31,7 +31,6 @@
             (function() {
                 const ctx = document.getElementById('dailyCountsChart').getContext('2d');
                 const dates = {{ dates|tojson|safe }};
-                const counts = {{ counts|tojson|safe }};
                 const correct_counts_by_loke = {{ correct_counts_by_user_loke|tojson|safe }};
                 const correct_counts_by_adarsh = {{ correct_counts_by_user_adarsh|tojson|safe }};
                 const incorrect_counts_by_user_adarsh = {{ incorrect_counts_by_user_adarsh|tojson|safe }};
