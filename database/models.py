@@ -53,7 +53,7 @@ class WordCount(db.Model):
 
     @classmethod
     def get_todays_user_word_count(cls):
-        day_ago = datetime.now() - timedelta(days=1)
+        day_ago = datetime.now() - timedelta(days=0)
         print(f"Current user is: {current_user.username} and today's date is: {func.current_date()}")
         return cls.query.filter(cls.updated_at >= day_ago, cls.updated_by == current_user.username ).count()
     
