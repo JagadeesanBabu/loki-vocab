@@ -53,9 +53,10 @@ class WordCount(db.Model):
 
     @classmethod
     def get_todays_user_word_count(cls):
-        day_ago = datetime.now() - timedelta(days=0)
+        day_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        # day_ago = datetime.now() - timedelta(days=0)
         print(f"Current user is: {current_user.username} and today's date is: {func.current_date()}")
-        return cls.query.filter(cls.updated_at >= day_ago, cls.updated_by == current_user.username ).count()
+        return cls.query.filter(cls.updated_at >= day_start, cls.updated_by == current_user.username ).count()
     
     @classmethod
     def increment_word_count(cls, word):
@@ -112,7 +113,8 @@ class WordCount(db.Model):
             cls.updated_by.label('updated_by')
         ).filter(
             cls.updated_at >= start_date,
-            cls.updated_at <= end_date
+            cls.updated_at <= end_date,
+            cls.count > 0
         ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
         daily_correct_count_by_user = {(row.date, row.updated_by): row.total_count for row in daily_correct_count_by_user_row}
         return daily_correct_count_by_user
@@ -125,7 +127,8 @@ class WordCount(db.Model):
             cls.updated_by.label('updated_by')
         ).filter(
             cls.updated_at >= start_date,
-            cls.updated_at <= end_date
+            cls.updated_at <= end_date,
+            cls.incorrect_count > 0
         ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
    
     
