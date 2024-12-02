@@ -108,7 +108,7 @@ class WordCount(db.Model):
     def get_daily_correct_counts_by_user(cls, start_date, end_date) -> dict:
         daily_correct_count_by_user_row = db.session.query(
             func.date(cls.updated_at).label('date'),
-            func.sum(cls.count).label('total_count'),
+            func.count(cls.count).label('total_count'),
             cls.updated_by.label('updated_by')
         ).filter(
             cls.updated_at >= start_date,
@@ -134,7 +134,7 @@ class WordCount(db.Model):
         daily_incorrect_count_by_user = db.session.query(
             func.date(cls.updated_at).label('date'),
             cls.updated_by.label('updated_by'),
-            func.sum(cls.incorrect_count).label('total_incorrect_count')
+            func.count(cls.incorrect_count).label('total_incorrect_count')
         ).filter(
             cls.updated_at >= start_date,
             cls.updated_at <= end_date
