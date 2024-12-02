@@ -140,7 +140,8 @@ class WordCount(db.Model):
             func.count(cls.incorrect_count).label('total_incorrect_count')
         ).filter(
             cls.updated_at >= start_date,
-            cls.updated_at <= end_date
+            cls.updated_at <= end_date,
+            cls.incorrect_count > 0
         ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
         daily_incorrect_count_by_user = {(row.date, row.updated_by): row.total_incorrect_count for row in daily_incorrect_count_by_user}
         return daily_incorrect_count_by_user
