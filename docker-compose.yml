@@ -1,0 +1,24 @@
+version: '3.1'
+
+services:
+
+  db:
+    image: mariadb:latest
+    container_name: mariadb-container
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpassword
+      MARIADB_DATABASE: mydatabase
+      MARIADB_USER: myuser
+      MARIADB_PASSWORD: mypassword
+    ports:
+      - 3306:3306  # Expose MariaDB on port 3306
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer-container
+    restart: always
+    ports:
+      - 8080:8080  # Expose Adminer on port 8080
+    depends_on:
+      - db
