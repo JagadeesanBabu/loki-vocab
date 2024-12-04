@@ -184,6 +184,6 @@ class WordData(db.Model):
         for word in all_words:
             word_count = word_count = WordCount.query.filter_by(word=word.strip()).first()
             count = word_count.count if word_count else 0
-            if count < max_count and word_count.updated_at.date() != datetime.now().date():
+            if count < max_count and (not word_count or word_count.updated_at.date() != datetime.now().date()):
                 unlearned_words.append(word)
         return unlearned_words
