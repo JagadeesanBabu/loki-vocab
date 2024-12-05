@@ -6,7 +6,9 @@ from flask import session
 from database.models import WordCount, WordData
 from services.auth_service import clear_session_files
 from services.openai_service import fetch_definition, fetch_incorrect_options
+from flask_caching import Cache
 
+cache = Cache(config={'CACHE_TYPE': 'simple'})
 
 def reset_score():
     """Resets the user's score."""
@@ -14,6 +16,7 @@ def reset_score():
     session['score'] = {'correct': 0, 'incorrect': 0}
     session.modified = True
 
+@cache.memoize(timeout=300)
 def get_next_question(unlearned_words):
     """Fetches the next question with options."""
     word = random.choice(unlearned_words)
@@ -92,6 +95,7 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         'updated_score': session['score']
     }
 
+@cache.memoize(timeout=300)
 def get_summary():
     """Aggregates the summary of right and wrong answers."""
     correct_answers = session['score']['correct']

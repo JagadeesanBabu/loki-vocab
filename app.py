@@ -11,6 +11,8 @@ from routes.dashboard_route import dashboard_blueprint
 from database.db import init_db
 from database import db
 from services.auth_service import clear_session_files
+from flask_caching import Cache
+from celery import Celery
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -28,8 +30,13 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login_blueprint.login'
 
+# Configure Flask-Caching
+cache = Cache(app)
+cache.init_app(app)
 
-
+# Configure Celery
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 
 # # Automatically apply migrations
 # with app.app_context():

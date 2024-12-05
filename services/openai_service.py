@@ -1,10 +1,14 @@
 import openai
 from config import Config
 from openai.error import RateLimitError, OpenAIError
+from celery import Celery
 
 openai.api_key = Config.OPENAI_API_KEY
 model = "gpt-4o-mini-2024-07-18"
 
+celery = Celery(__name__, broker=Config.CELERY_BROKER_URL)
+
+@celery.task
 def fetch_definition(word):
     print(f"Fetching definition for '{word}' from OpenAI API.")
     try:
@@ -30,9 +34,9 @@ def fetch_definition(word):
         print(f"Error fetching meaning: {e}")
         return "Definition not available."
 
+@celery.task
 def fetch_incorrect_options(word, correct_definition, num_options=3):
     try:
-        # prompt = f"Provide {num_options} plausible but incorrect definitions for the word '{word}' that are different from its actual meaning, without any introductions or extra explanations. Only list each incorrect definition on a new line."
         prompt = (
         f"Provide {num_options} brief, plausible, and incorrect definitions for the word '{word}' that closely resemble "
         f"the style and structure of this correct definition: '{correct_definition}', but with a different meaning."
@@ -49,7 +53,6 @@ def fetch_incorrect_options(word, correct_definition, num_options=3):
             stop=None,
         )
         incorrect_definitions = response['choices'][0]['message']['content'].strip().split("\n")
-        # Clean up the definitions
         incorrect_definitions = [defn.strip('-•1234567890. ').strip() for defn in incorrect_definitions if defn.strip()]
         return incorrect_definitions[:num_options]
     except RateLimitError as e:
