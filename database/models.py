@@ -1,4 +1,3 @@
-
 from sqlalchemy import func
 from .db import db
 from flask_login import UserMixin, current_user
@@ -32,6 +31,8 @@ class WordCount(db.Model):
 
     __table_args__ = (
         db.PrimaryKeyConstraint('word', 'updated_by'),
+        db.Index('idx_updated_at', 'updated_at'),
+        db.Index('idx_updated_by', 'updated_by'),
     )
 
     @classmethod
