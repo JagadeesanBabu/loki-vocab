@@ -18,6 +18,10 @@ class Config:
     SESSION_PERMANENT = False
     SESSION_USE_SIGNER = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///vocab_game.db'
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
+    CELERY_BACKEND_URL = os.environ.get('CELERY_BACKEND_URL')
+    CACHE_TYPE = os.getenv('CACHE_TYPE', 'null')  # Change this to the appropriate cache type
+    CACHE_DEFAULT_TIMEOUT = 300
     # if its heroku environment then use jawsdb
     if os.environ.get('HEROKU') == 'True':
         print(f"Using JAWSDB")
