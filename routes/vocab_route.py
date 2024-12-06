@@ -71,7 +71,7 @@ def vocab_game():
         
         # Exclude words that have been presented more than 10 times
 
-        unlearned_words = WordData.get_unlearned_words(all_words, max_count=10)
+        unlearned_words = WordData.get_unlearned_words(all_words, max_count=1)
         
         if not unlearned_words:
             # If all words are learned
