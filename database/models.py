@@ -180,10 +180,25 @@ class WordData(db.Model):
     
     @classmethod
     def get_unlearned_words(cls, all_words, max_count=10):
-        unlearned_words = []
-        for word in all_words:
-            word_count = word_count = WordCount.query.filter_by(word=word.strip()).first()
-            count = word_count.count if word_count else 0
-            if count < max_count and (not word_count or word_count.updated_at.date() != datetime.now().date()):
-                unlearned_words.append(word)
+        """
+        Returns a list of words whose count is less than max_count. 
+        This optimized version performs only a single database query 
+        instead of one per word.
+        """
+        # 1. Fetch all relevant WordCount records in a single query
+        word_count_rows = (
+            db.session.query(WordCount.word, WordCount.count)
+            .filter(
+                WordCount.word.in_(all_words),
+                WordCount.updated_by == current_user.username
+            )
+            .all()
+        )
+        # 2. Build a dictionary mapping word -> count
+        count_dict = {wc.word: wc.count for wc in word_count_rows}
+        # 3. Determine which words have count < max_count
+        unlearned_words = [
+            word for word in all_words 
+            if count_dict.get(word, 0) < max_count
+        ]
         return unlearned_words
