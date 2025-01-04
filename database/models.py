@@ -179,13 +179,8 @@ class WordData(db.Model):
         return word_data.incorrect_options if word_data else None
     
     @classmethod
-    def get_unlearned_words(cls, all_words, max_count=10):
-        """
-        Returns a list of words whose count is less than max_count. 
-        This optimized version performs only a single database query 
-        instead of one per word.
-        """
-        # 1. Fetch all relevant WordCount records in a single query
+    def get_unlearned_words(cls, all_words, max_count=1):
+        # 1) Query for WordCount rows
         word_count_rows = (
             db.session.query(WordCount.word, WordCount.count)
             .filter(
@@ -194,11 +189,21 @@ class WordData(db.Model):
             )
             .all()
         )
-        # 2. Build a dictionary mapping word -> count
-        count_dict = {wc.word: wc.count for wc in word_count_rows}
-        # 3. Determine which words have count < max_count
-        unlearned_words = [
-            word for word in all_words 
-            if count_dict.get(word, 0) < max_count
-        ]
+
+        # 2) Build dict with stripped/lowercased keys
+        count_dict = {row.word.strip().lower(): row.count for row in word_count_rows}
+
+        # 3) Compare with a normalized version of each word in all_words
+        unlearned_words = []
+        for raw_word in all_words:
+            # Strip + lowercase to match our dict keys
+            clean_word = raw_word.strip().lower()
+
+            # .get() returns None if not found; default to 0
+            current_count = count_dict.get(clean_word, 0)
+
+            if current_count < max_count:
+                unlearned_words.append(raw_word)  # Or clean_word—whichever you want
+
+        print(f"unlearned word count: {len(unlearned_words)}")
         return unlearned_words
