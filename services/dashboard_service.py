@@ -2,6 +2,8 @@ import datetime
 from itertools import product
 from datetime import datetime, date
 from database.models import WordCount
+import logging
+logger = logging.getLogger(__name__)
 
 class DashboardService:
     @classmethod
@@ -20,7 +22,8 @@ class DashboardService:
 
         # Generate all combinations of dates and users
         date_user_combinations = [{"date": date, "user": user} for date, user in product(dates, users)]
-        print(f"Date user combinations: {date_user_combinations}")
+        logger.debug(f"Date user combinations: {date_user_combinations}")
+        # print(f"Date user combinations: {date_user_combinations}")
         return date_user_combinations
 
     @classmethod
@@ -34,7 +37,7 @@ class DashboardService:
         # Get actual incorrect counts from the database
         actual_counts: dict = WordCount.get_daily_incorrect_counts_by_user(start_date, end_date)
 
-        print(f"Actual incorrect counts: {actual_counts}")
+        logger.debug(f"Actual incorrect counts: {actual_counts}")
 
         # Fill missing data with zeros
         result_incorrect_count_by_user_by_date = []
@@ -49,7 +52,7 @@ class DashboardService:
                 "user": entry["user"],
                 "total_incorrect_count": int(actual_count) # Use tuple keys to match `actual_counts`
             })
-        print(f"Result incorrect count by user by date: {result_incorrect_count_by_user_by_date}")
+        logger.debug(f"Result incorrect count by user by date: {result_incorrect_count_by_user_by_date}")
         # Sort the results by date in ascending order
         result_incorrect_count_by_user_by_date = sorted(result_incorrect_count_by_user_by_date, key=lambda x: x["date"])
         return result_incorrect_count_by_user_by_date
@@ -65,7 +68,7 @@ class DashboardService:
         # Get actual correct counts from the database
         actual_counts: dict = WordCount.get_daily_correct_counts_by_user(start_date, end_date)
 
-        print(f"Actual correct counts: {actual_counts}")
+        logger.debug(f"Actual correct counts: {actual_counts}")
 
         result_correct_count_by_user_by_date = []
 
@@ -80,7 +83,7 @@ class DashboardService:
                 "user": entry["user"],
                 "total_correct_count": int(actual_count)  # Use tuple keys to match `actual_counts`
             })
-        print(f"Result correct count by user by date: {result_correct_count_by_user_by_date}")
+        logger.debug(f"Result correct count by user by date: {result_correct_count_by_user_by_date}")
         # Sort the results by date in ascending order
         result_correct_count_by_user_by_date = sorted(result_correct_count_by_user_by_date, key=lambda x: x["date"])
         return result_correct_count_by_user_by_date

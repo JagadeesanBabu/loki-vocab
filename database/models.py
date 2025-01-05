@@ -3,6 +3,8 @@ from sqlalchemy import func
 from .db import db
 from flask_login import UserMixin, current_user
 from datetime import datetime, timedelta
+import logging
+logger = logging.getLogger(__name__)
 
 class User(UserMixin):
     def __init__(self, id, username, password):
@@ -55,7 +57,7 @@ class WordCount(db.Model):
     def get_todays_user_word_count(cls):
         day_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         # day_ago = datetime.now() - timedelta(days=0)
-        print(f"Current user is: {current_user.username} and today's date is: {func.current_date()}")
+        logger.info(f"Current user is: {current_user.username} and today's date is: {func.current_date()}")
         return cls.query.filter(cls.updated_at >= day_start, cls.updated_by == current_user.username ).count()
     
     @classmethod
@@ -73,7 +75,7 @@ class WordCount(db.Model):
         
     @classmethod
     def increment_incorrect_count(cls, word):
-        print(f'Current user is: {current_user.username} word is: {word}' )
+        logger.info(f'Current user is: {current_user.username} word is: {word}' )
         word_incorrect_count = cls.query.filter_by(word=word, updated_by=current_user.username).first()
         if word_incorrect_count:
             # Safely increment the count if the row exists
@@ -89,7 +91,7 @@ class WordCount(db.Model):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"Failed to update incorrect count: {e}") 
+            logger.error(f"Failed to update incorrect count: {e}") 
     
     @classmethod
     def get_learnt_words(cls):
@@ -205,5 +207,5 @@ class WordData(db.Model):
             if current_count < max_count:
                 unlearned_words.append(raw_word)  # Or clean_word—whichever you want
 
-        print(f"unlearned word count: {len(unlearned_words)}")
+        logger.info(f"unlearned word count: {len(unlearned_words)}")
         return unlearned_words

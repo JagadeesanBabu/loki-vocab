@@ -5,6 +5,8 @@ from database.models import WordData, WordCount
 from services.vocab_service import reset_score, get_next_question, check_answer, get_summary
 from services.google_sheet_service import GoogleSheetsService
 from config import Config
+import logging
+logger = logging.getLogger(__name__)
 
 vocab_game_blueprint = Blueprint('vocab_game_blueprint', __name__)
 
@@ -22,7 +24,7 @@ def vocab_game():
         session['score'] = {'correct': 0, 'incorrect': 0}
     # Check if the user has attempted 50 questions from the DB and redirect to dashboard saying you have reached the limit
     todays_user_word_count = WordCount.get_todays_user_word_count()
-    print(f"Today's user word count: {str(todays_user_word_count)}")
+    logger.info(f"Today's user word count: {str(todays_user_word_count)}")
     if todays_user_word_count >= 120:
         return redirect(url_for('dashboard_blueprint.dashboard', limit_reached=True))
 

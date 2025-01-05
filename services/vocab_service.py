@@ -6,6 +6,8 @@ from flask import session
 from database.models import WordCount, WordData
 from services.auth_service import clear_session_files
 from services.openai_service import fetch_definition, fetch_incorrect_options
+import logging
+logger = logging.getLogger(__name__)
 
 
 def reset_score():
@@ -26,7 +28,7 @@ def get_next_question(unlearned_words):
         word_data = WordData(word=word, definition=correct_answer, incorrect_options=json.dumps(incorrect_options))
         word_data.add_word_data()
     else:
-        print(f"Word '{word}' already exists in the database.")
+        logger.info(f"Word '{word}' already exists in the database.")
         correct_answer = WordData.get_correct_answer(word)
         incorrect_options = json.loads(WordData.get_incorrect_options(word))  # Ensure incorrect_options is parsed as a list
 
@@ -59,8 +61,8 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
 
     # Check if the user's answer is similar to the correct answer
     similarity_ratio = text_similarity(user_answer_normalized, correct_answer_normalized)
-    print(f"Similarity ratio: {similarity_ratio} and threshold: {threshold}")
-    print(f"User answer: {user_answer_normalized} \nCorr answer: {correct_answer_normalized}")
+    logger.info(f"Similarity ratio: {similarity_ratio} and threshold: {threshold}")
+    logger.info(f"User answer: {user_answer_normalized} \nCorr answer: {correct_answer_normalized}")
     
     # Check if the user's answer is close to the correct answer
     is_correct = similarity_ratio >= threshold

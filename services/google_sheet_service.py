@@ -1,6 +1,8 @@
 import json
 import gspread
 from google.oauth2.service_account import Credentials
+import logging
+logger = logging.getLogger(__name__)
 
 class GoogleSheetsService:
     def __init__(self, service_account_info, spreadsheet_id):
@@ -31,5 +33,5 @@ class GoogleSheetsService:
             words = values[1:]  # Skip the header row
             return words
         except Exception as e:
-            print(f"Error loading words from Google Sheets: {e}")
+            logger.error(f"Error loading words from Google Sheets: {e}")
             return []

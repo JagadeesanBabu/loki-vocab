@@ -1,12 +1,13 @@
 import openai
 from config import Config
 from openai.error import RateLimitError, OpenAIError
+import logging
 
 openai.api_key = Config.OPENAI_API_KEY
 model = "gpt-4o-mini-2024-07-18"
 
 def fetch_definition(word):
-    print(f"Fetching definition for '{word}' from OpenAI API.")
+    logging.info(f"Fetching definition for '{word}' from OpenAI API.")
     try:
         response = openai.ChatCompletion.create(
             model=model,
@@ -21,13 +22,13 @@ def fetch_definition(word):
         definition = response['choices'][0]['message']['content'].strip()
         return definition
     except RateLimitError as e:
-        print(f"Rate limit exceeded: {e}")
+        logging.error(f"Rate limit exceeded: {e}")
         return "Definition not available due to API rate limit."
     except OpenAIError as e:
-        print(f"OpenAI API error: {e}")
+        logging.error(f"OpenAI API error: {e}")
         return "Definition not available due to API error."
     except Exception as e:
-        print(f"Error fetching meaning: {e}")
+        logging.error(f"Error fetching meaning: {e}")
         return "Definition not available."
 
 def fetch_incorrect_options(word, correct_definition, num_options=3):
@@ -53,11 +54,11 @@ def fetch_incorrect_options(word, correct_definition, num_options=3):
         incorrect_definitions = [defn.strip('-•1234567890. ').strip() for defn in incorrect_definitions if defn.strip()]
         return incorrect_definitions[:num_options]
     except RateLimitError as e:
-        print(f"Rate limit exceeded: {e}")
+        logging.error(f"Rate limit exceeded: {e}")
         return ["Incorrect option not available due to API rate limit."] * num_options
     except OpenAIError as e:
-        print(f"OpenAI API error: {e}")
+        logging.error(f"OpenAI API error: {e}")
         return ["Incorrect option not available due to API error."] * num_options
     except Exception as e:
-        print(f"Error fetching incorrect options: {e}")
+        logging.error(f"Error fetching incorrect options: {e}")
         return ["Incorrect option not available."] * num_options

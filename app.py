@@ -1,3 +1,4 @@
+import logging
 from flask import Flask
 from flask_migrate import Migrate, upgrade
 from flask_session import Session
@@ -11,6 +12,18 @@ from routes.dashboard_route import dashboard_blueprint
 from database.db import init_db
 from database import db
 from services.auth_service import clear_session_files
+
+# Set up Debug logging if its local environment else INFO logging for Heroku
+import os
+# check it the OS is mac
+is_mac = os.uname().sysname == 'Darwin'
+log_level = logging.INFO
+if is_mac == True:
+    log_level = logging.DEBUG
+
+logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.info(f"Setting log level to {log_level}")
 
 app = Flask(__name__)
 app.config.from_object(Config)

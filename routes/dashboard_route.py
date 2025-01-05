@@ -3,6 +3,8 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 from database.models import WordCount
 from services.dashboard_service import DashboardService
+import logging
+logger = logging.getLogger(__name__)
 
 dashboard_blueprint = Blueprint('dashboard_blueprint', __name__)
 
@@ -13,7 +15,7 @@ def dashboard():
     one_month_ago = today - datetime.timedelta(days=30)
 
     # Query total counts per day for the last 30 days
-    print(f"Querying daily counts from {one_month_ago} to {today}")
+    logger.debug(f"Querying daily counts from {one_month_ago} to {today}")
     # daily_correct_counts_records_by_user = WordCount.get_daily_correct_counts_by_user(one_month_ago, today)
     # daily_incorrect_counts_records = WordCount.get_daily_incorrect_counts(one_month_ago, today)
     # daily_incorrect_counts_records_by_user = WordCount.get_daily_incorrect_counts_by_user(one_month_ago, today)
@@ -39,8 +41,8 @@ def dashboard():
     # Capitalize the first letter of the username
     logged_user = current_user.username
     logged_user = logged_user[0].upper() + logged_user[1:]
-    print(f"daily_correct_counts_records_by_user: {daily_correct_counts_records_by_user}")
-    print(f"daily_incorrect_counts_records: {daily_incorrect_counts_records}")
+    logger.debug(f"daily_correct_counts_records_by_user: {daily_correct_counts_records_by_user}")
+    logger.debug(f"daily_incorrect_counts_records: {daily_incorrect_counts_records}")
 
 
     return render_template(
