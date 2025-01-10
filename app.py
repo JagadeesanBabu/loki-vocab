@@ -1,4 +1,6 @@
 import logging
+import pstats
+import cProfile
 from flask import Flask
 from flask_migrate import Migrate, upgrade
 from flask_session import Session
@@ -65,5 +67,14 @@ app.register_blueprint(dashboard_blueprint)
 # # Initialize database
 # init_db(app)
 
-if __name__ == '__main__':
+def run_app():
     app.run(debug=True, host='0.0.0.0', port=5001)
+
+
+if __name__ == '__main__':
+    profiler = cProfile.Profile()
+    profiler.run('run_app()')
+    # Print top 20 functions sorted by cumulative time
+    stats = pstats.Stats(profiler).sort_stats(pstats.SortKey.TIME)
+    stats.print_stats(20)
+    
