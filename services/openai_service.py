@@ -62,3 +62,47 @@ def fetch_incorrect_options(word, correct_definition, num_options=3):
     except Exception as e:
         logging.error(f"Error fetching incorrect options: {e}")
         return ["Incorrect option not available."] * num_options
+
+def fetch_similar_words(word, num_words=4):
+    logging.info(f"Fetching similar words for '{word}' from OpenAI API.")
+    try:
+        prompt = (
+            f"For the word '{word}', provide {num_words} similar or related words with their brief definitions. "
+            f"Format the response exactly like this example (without numbering, just word: definition pairs):\n\n"
+            f"articulate: Able to express oneself clearly and effectively.\n"
+            f"eloquent: Fluent and persuasive in speaking or writing.\n"
+            f"coherent: Logical and consistent in thought or speech.\n"
+            f"expressive: Effectively conveying thought or feeling."
+        )
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=150,
+            n=1,
+            stop=None,
+        )
+        content = response['choices'][0]['message']['content'].strip()
+        
+        # Parse the response into word-definition pairs
+        similar_words = []
+        for line in content.split('\n'):
+            if line and ':' in line:
+                parts = line.split(':', 1)
+                if len(parts) == 2:
+                    word = parts[0].strip()
+                    definition = parts[1].strip()
+                    similar_words.append({"word": word, "definition": definition})
+        
+        return similar_words[:num_words]  # Ensure we return at most num_words
+    except RateLimitError as e:
+        logging.error(f"Rate limit exceeded: {e}")
+        return [{"word": "Not available", "definition": "Similar words not available due to API rate limit."}]
+    except OpenAIError as e:
+        logging.error(f"OpenAI API error: {e}")
+        return [{"word": "Not available", "definition": "Similar words not available due to API error."}]
+    except Exception as e:
+        logging.error(f"Error fetching similar words: {e}")
+        return [{"word": "Not available", "definition": "Similar words not available."}]

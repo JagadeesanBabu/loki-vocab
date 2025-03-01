@@ -56,7 +56,8 @@ def vocab_game():
             correct_answer=result_data['correct_answer'],
             answer_status=result_data['answer_status'],
             score=session['score'],
-            show_next_question=True
+            show_next_question=True,
+            similar_words=result_data.get('similar_words', [])
         )
     else:
         # GET request: Initialize a new question
@@ -84,7 +85,8 @@ def vocab_game():
                 result='Congratulations! You have learned all the words.',
                 answer_status='',
                 score=session['score'],
-                show_next_question=False
+                show_next_question=False,
+                similar_words=[]
             )
 
         # Generate the next question
@@ -101,8 +103,21 @@ def vocab_game():
             result="",
             answer_status="",
             score=session['score'],
-            show_next_question=False
+            show_next_question=False,
+            similar_words=[]
         )
+
+@vocab_game_blueprint.route('/get_similar_words', methods=['POST'])
+@login_required
+def get_similar_words():
+    from flask import jsonify
+    from services.openai_service import fetch_similar_words
+    word = request.form.get('word')
+    if not word:
+        return jsonify({'error': 'No word provided'}), 400
+    
+    similar_words = fetch_similar_words(word, num_words=4)
+    return jsonify({'similar_words': similar_words})
 
 @vocab_game_blueprint.route('/summary', methods=['GET'])
 @login_required

@@ -29,6 +29,20 @@
             <p class="correct-answer">The correct meaning of <strong>'{{ word }}'</strong> is:</p>
             <div class="correct-definition">{{ correct_answer }}</div>
             
+            {% if answer_status == 'correct' %}
+                <div id="similar-words-section">
+                    <button type="button" id="find-similar-words" class="similar-words-button">
+                        <i class="fas fa-search"></i> Find Similar Words
+                    </button>
+                    <div id="similar-words-container" class="similar-words-container" style="display: none;">
+                        <h3>Related Words:</h3>
+                        <div id="similar-words-list" class="similar-words-list">
+                            <div class="loading-spinner">Loading similar words...</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
             {% if show_next_question %}
                 <form method="GET" action="{{ url_for('vocab_game_blueprint.vocab_game') }}" onsubmit="disableButton(this)">
                     <button type="submit" class="next-button" id="next-button">Next Question <div class="spinner"></div></button>
@@ -70,6 +84,65 @@
             link.classList.add('loading');
             link.querySelector('.spinner').style.display = 'inline-block';
         });
+
+        // Similar words functionality
+        if (document.getElementById('find-similar-words')) {
+            document.getElementById('find-similar-words').addEventListener('click', function() {
+                var button = this;
+                var container = document.getElementById('similar-words-container');
+                var wordsList = document.getElementById('similar-words-list');
+                
+                // Show container with loading state
+                container.style.display = 'block';
+                button.disabled = true;
+                button.textContent = 'Loading...';
+                
+                // Get the current word
+                var word = "{{ word }}";
+                
+                // Make AJAX request
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', "{{ url_for('vocab_game_blueprint.get_similar_words') }}", true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        // Parse response
+                        var response = JSON.parse(xhr.responseText);
+                        var similarWords = response.similar_words;
+                        
+                        // Clear loading state
+                        wordsList.innerHTML = '';
+                        
+                        // Add similar words to the list
+                        similarWords.forEach(function(item) {
+                            var wordItem = document.createElement('div');
+                            wordItem.className = 'similar-word-item';
+                            wordItem.innerHTML = '<span class="similar-word">' + item.word + '</span>: ' +
+                                                '<span class="similar-definition">' + item.definition + '</span>';
+                            wordsList.appendChild(wordItem);
+                        });
+                        
+                        // Hide button after successful fetch
+                        button.style.display = 'none';
+                    } else {
+                        // Handle error
+                        wordsList.innerHTML = '<div class="error">Failed to load similar words. Please try again.</div>';
+                        button.disabled = false;
+                        button.textContent = 'Try Again';
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    // Handle network error
+                    wordsList.innerHTML = '<div class="error">Network error. Please check your connection and try again.</div>';
+                    button.disabled = false;
+                    button.textContent = 'Try Again';
+                };
+                
+                xhr.send('word=' + encodeURIComponent(word));
+            });
+        }
     </script>
 </body>
 </html>
