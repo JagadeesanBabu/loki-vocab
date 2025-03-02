@@ -65,19 +65,32 @@ def vocab_game():
         spreadsheet_id = Config.SPREADSHEET_ID
         sheets_service = GoogleSheetsService(service_account_file_info, spreadsheet_id)
 
-        # Load all words if its not already loaded
-        if 'all_words' not in session:
-            all_words = sheets_service.load_words()
-            session['all_words'] = all_words
-        else:
-            all_words = session['all_words']
+        # Always reload words from Google Sheets to get latest updates
+        all_words = sheets_service.load_words()
+        
+        # Log the words loaded from Google Sheets
+        logger.info(f"Loaded {len(all_words)} words from Google Sheets")
+        
+        # For debugging, log the first few words if available
+        if all_words and len(all_words) > 0:
+            sample = all_words[:min(5, len(all_words))]
+            logger.info(f"Sample words: {sample}")
+            
+        session['all_words'] = all_words
         
         # Exclude words that have been presented more than 10 times
 
         unlearned_words = WordData.get_unlearned_words(all_words, max_count=1)
+        logger.info(f"Found {len(unlearned_words)} unlearned words")
         
+        # If no unlearned words, just use all words (this means all have been seen at least once)
+        if not unlearned_words and all_words:
+            logger.info("No unlearned words found, using all available words instead")
+            unlearned_words = all_words
+            
         if not unlearned_words:
-            # If all words are learned
+            # If all words are learned and no words available at all
+            logger.error("No words available at all. This should not happen with our default words.")
             return render_template(
                 'vocab_game.html',
                 word='',

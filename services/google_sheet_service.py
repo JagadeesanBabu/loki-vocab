@@ -53,10 +53,45 @@ class GoogleSheetsService:
             self.worksheet = self._get_worksheet('Vocabulary')
             values = self.worksheet.col_values(1)  # Get all values in column 1
             words = values[1:]  # Skip the header row
+            
+            # If no words found, add some default vocabulary words to the worksheet
+            if not words:
+                logger.info("No words found in Google Sheets. Adding default vocabulary words.")
+                default_words = [
+                    "abase", "abate", "abdicate", "aberrant", "abeyance", "abhor", "abject", "abjure",
+                    "abnegate", "abominate", "aboriginal", "abortive", "abrasive", "abrogate", "abscond",
+                    "absolution", "abstain", "abstemious", "abstruse", "abundant", "abut", "abysmal",
+                    "accede", "accessible", "accessory", "acclaimed", "accolade", "accomplish", "accord",
+                    "accost", "acerbic", "acme", "acquiesce", "acquisitive", "acrimonious", "acumen"
+                ]
+                
+                # Add each word to the sheet
+                for word in default_words:
+                    try:
+                        # Add placeholder definition (will be replaced by OpenAI)
+                        from datetime import datetime
+                        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        self.worksheet.append_row([word, "Definition will be fetched automatically", timestamp])
+                        logger.info(f"Added default word '{word}' to Google Sheets")
+                    except Exception as e:
+                        logger.error(f"Error adding default word '{word}' to Google Sheets: {e}")
+                
+                # Return the default words
+                return default_words
+            
+            # Filter out empty strings and strings that only contain whitespace
+            words = [word for word in words if word and word.strip()]
+            
             return words
         except Exception as e:
             logger.error(f"Error loading words from Google Sheets: {e}")
-            return []
+            # Return default words as fallback if there's an error
+            default_words = [
+                "abase", "abate", "abdicate", "aberrant", "abeyance", "abhor", "abject", "abjure",
+                "abnegate", "abominate", "aboriginal", "abortive", "abrasive", "abrogate", "abscond"
+            ]
+            logger.info("Returning default vocabulary words due to Google Sheets error")
+            return default_words
             
     def save_vocabulary_word(self, word, definition):
         """Save a vocabulary word and its definition to the vocabulary worksheet."""
