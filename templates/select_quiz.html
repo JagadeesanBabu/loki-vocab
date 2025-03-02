@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Quiz Type</title>
+    <!-- External CSS and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-KyZXEAg3QhqLMpG8r+8jhAXg1eyZbvQJlnod+1Zc+VVEoUeFef8PvRL/n5gFyXUR" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        .selection-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            font-weight: 600;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-message {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 40px;
+        }
+        
+        .quiz-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .quiz-option {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 25px;
+            width: 300px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .quiz-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-color: #007bff;
+        }
+        
+        .quiz-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .vocab-icon {
+            color: #007bff;
+        }
+        
+        .math-icon {
+            color: #28a745;
+        }
+        
+        .quiz-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .quiz-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .select-button {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 8px 20px;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .vocab-button:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .math-button:hover {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        
+        .logout-link {
+            text-decoration: none;
+            color: #fff;
+            background-color: #dc3545;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        
+        .logout-link:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="selection-container">
+        <div class="header">
+            <a href="{{ url_for('login_blueprint.logout') }}" class="logout-link">Logout</a>
+        </div>
+        
+        <h1>Welcome, {{ current_user.username }}!</h1>
+        
+        <p class="welcome-message">Choose which skill you want to practice today:</p>
+        
+        <div class="quiz-options">
+            <div class="quiz-option" onclick="window.location.href='{{ url_for('vocab_game_blueprint.vocab_game') }}'">
+                <div class="quiz-icon vocab-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h2 class="quiz-title">Vocabulary Practice</h2>
+                <p class="quiz-description">Improve your vocabulary skills by learning new words and their definitions. Perfect for building a strong foundation in English.</p>
+                <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="select-button vocab-button">Start Vocabulary Quiz</a>
+            </div>
+            
+            <div class="quiz-option" onclick="window.location.href='{{ url_for('math_game_blueprint.math_game') }}'">
+                <div class="quiz-icon math-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <h2 class="quiz-title">Math Word Problems</h2>
+                <p class="quiz-description">Practice solving GL-level math word problems to improve your problem-solving skills and prepare for grammar school exams.</p>
+                <a href="{{ url_for('math_game_blueprint.math_game') }}" class="select-button math-button">Start Math Quiz</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

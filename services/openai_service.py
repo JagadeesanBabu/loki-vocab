@@ -106,3 +106,99 @@ def fetch_similar_words(word, num_words=4):
     except Exception as e:
         logging.error(f"Error fetching similar words: {e}")
         return [{"word": "Not available", "definition": "Similar words not available."}]
+        
+def generate_math_problem(category, topic, difficulty):
+    """Generates a math word problem based on specified parameters."""
+    logging.info(f"Generating {difficulty} {category} problem on {topic}")
+    try:
+        prompt = (
+            f"Create a {difficulty} level math word problem for a grammar school exam (GL level) on the topic of {topic} "
+            f"within the category of {category}. The problem should be suitable for a 10-12 year old child.\n\n"
+            f"Format your response as JSON with the following structure:\n"
+            f"{{\n"
+            f"  \"question\": \"[The full word problem]\",\n"
+            f"  \"correct_answer\": [The answer as a number or string],\n"
+            f"  \"category\": \"{category}\",\n"
+            f"  \"topic\": \"{topic}\",\n"
+            f"  \"difficulty\": \"{difficulty}\",\n"
+            f"  \"explanation\": \"[Step-by-step solution explanation]\"\n"
+            f"}}\n\n"
+            f"Ensure the explanation is clear and educational, explaining each step of the solution process."
+        )
+        
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500,
+            n=1,
+            stop=None,
+        )
+        
+        content = response['choices'][0]['message']['content'].strip()
+        
+        # Extract the JSON part from the response
+        try:
+            # Find JSON if it's embedded in other text
+            import re
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if json_match:
+                content = json_match.group(0)
+            
+            problem = json.loads(content)
+            
+            # Validate the required fields
+            required_fields = ['question', 'correct_answer', 'category', 'topic', 'difficulty', 'explanation']
+            for field in required_fields:
+                if field not in problem:
+                    logging.error(f"Generated problem missing field: {field}")
+                    return None
+            
+            return problem
+            
+        except json.JSONDecodeError as e:
+            logging.error(f"Error decoding JSON response: {e}")
+            logging.error(f"Raw response: {content}")
+            return None
+            
+    except RateLimitError as e:
+        logging.error(f"Rate limit exceeded: {e}")
+        return None
+    except OpenAIError as e:
+        logging.error(f"OpenAI API error: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Error generating math problem: {e}")
+        return None
+
+def generate_problem_explanation(question, answer):
+    """Generates an explanation for a math problem if one doesn't exist."""
+    logging.info(f"Generating explanation for problem")
+    try:
+        prompt = (
+            f"Provide a clear, step-by-step explanation for solving this math word problem:\n\n"
+            f"Problem: {question}\n"
+            f"Answer: {answer}\n\n"
+            f"Your explanation should be suitable for a 10-12 year old child preparing for grammar school (GL level) exams. "
+            f"Break down the problem-solving process into logical steps that a child can follow."
+        )
+        
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.5,
+            max_tokens=300,
+            n=1,
+            stop=None,
+        )
+        
+        explanation = response['choices'][0]['message']['content'].strip()
+        return explanation
+        
+    except Exception as e:
+        logging.error(f"Error generating problem explanation: {e}")
+        return "No explanation available."

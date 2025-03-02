@@ -18,19 +18,51 @@ def reset_score():
 
 def get_next_question(unlearned_words):
     """Fetches the next question with options."""
+    from config import Config
+    from services.google_sheet_service import GoogleSheetsService
+    
     word = random.choice(unlearned_words)
     # hardcoding the word for testing
     # word = "defunct"
+    
+    # Check if we have Google Sheets service info in the session
+    if 'sheet_service' not in session:
+        service_account_file_info = Config.GOOGLE_CREDENTIALS_JSON
+        spreadsheet_id = Config.SPREADSHEET_ID
+        session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
+    
     # if the word is available in the DB, fetch the definition & incorrect options from the DB
     if not WordData.word_exists(word):
         correct_answer = fetch_definition(word)
         incorrect_options = fetch_incorrect_options(word, correct_answer, num_options=3)
         word_data = WordData(word=word, definition=correct_answer, incorrect_options=json.dumps(incorrect_options))
         word_data.add_word_data()
+        
+        # Also save to Google Sheets
+        try:
+            service_info = session['sheet_service']
+            sheets_service = GoogleSheetsService(
+                service_info['service_account_info'], 
+                service_info['spreadsheet_id']
+            )
+            sheets_service.save_vocabulary_word(word, correct_answer)
+        except Exception as e:
+            logger.error(f"Error saving vocabulary word to Google Sheets: {e}")
     else:
         logger.info(f"Word '{word}' already exists in the database.")
         correct_answer = WordData.get_correct_answer(word)
         incorrect_options = json.loads(WordData.get_incorrect_options(word))  # Ensure incorrect_options is parsed as a list
+        
+        # Still save to Google Sheets to ensure it's there
+        try:
+            service_info = session['sheet_service']
+            sheets_service = GoogleSheetsService(
+                service_info['service_account_info'], 
+                service_info['spreadsheet_id']
+            )
+            sheets_service.save_vocabulary_word(word, correct_answer)
+        except Exception as e:
+            logger.error(f"Error saving vocabulary word to Google Sheets: {e}")
 
     options = incorrect_options + [correct_answer]
     random.shuffle(options)
