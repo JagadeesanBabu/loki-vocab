@@ -5,7 +5,7 @@ import re
 from flask import session
 from database.models import WordCount, WordData
 from services.auth_service import clear_session_files
-from services.openai_service import fetch_definition, fetch_incorrect_options
+from services.openai_service import fetch_definition, fetch_incorrect_options, fetch_similar_words
 import logging
 logger = logging.getLogger(__name__)
 
@@ -67,12 +67,15 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
     # Check if the user's answer is close to the correct answer
     is_correct = similarity_ratio >= threshold
 
+    similar_words = []
     if is_correct:
         session['score']['correct'] += 1
         result_message = f"Correct! The meaning of '{word}' is '{correct_answer}'."
         answer_status = "correct"
         # Increment word count
         WordCount.increment_word_count(word)
+        # Fetch similar words
+        similar_words = fetch_similar_words(word, num_words=4)
     else:
         session['score']['incorrect'] += 1
         result_message = f"Incorrect. The correct meaning of '{word}' is '{correct_answer}'."
@@ -91,7 +94,8 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         'result_message': result_message,
         'correct_answer': correct_answer,
         'answer_status': answer_status,
-        'updated_score': session['score']
+        'updated_score': session['score'],
+        'similar_words': similar_words
     }
 
 def get_summary():
