@@ -83,6 +83,9 @@ def text_similarity(a, b):
 
 def check_answer(user_answer, word, correct_answer, threshold=0.9):
     """Checks the user's answer and updates the score."""
+    from config import Config
+    from services.google_sheet_service import GoogleSheetsService
+    
     # trim and convert to lowercase for case-insensitive comparison
     user_answer = user_answer.strip().lower()
     correct_answer = correct_answer.strip().lower()
@@ -95,6 +98,25 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
     similarity_ratio = text_similarity(user_answer_normalized, correct_answer_normalized)
     logger.info(f"Similarity ratio: {similarity_ratio} and threshold: {threshold}")
     logger.info(f"User answer: {user_answer_normalized} \nCorr answer: {correct_answer_normalized}")
+    
+    # Save the word to Google Sheets regardless of answer correctness
+    try:
+        # Check if we have Google Sheets service info in the session
+        if 'sheet_service' not in session:
+            service_account_file_info = Config.GOOGLE_CREDENTIALS_JSON
+            spreadsheet_id = Config.SPREADSHEET_ID
+            session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
+        
+        # Save word to Google Sheets
+        service_info = session['sheet_service']
+        sheets_service = GoogleSheetsService(
+            service_info['service_account_info'], 
+            service_info['spreadsheet_id']
+        )
+        sheets_service.save_vocabulary_word(word, correct_answer)
+        logger.info(f"Saved word '{word}' to Google Sheets after answer check")
+    except Exception as e:
+        logger.error(f"Error saving vocabulary word to Google Sheets: {e}")
     
     # Check if the user's answer is close to the correct answer
     is_correct = similarity_ratio >= threshold

@@ -35,7 +35,7 @@ class GoogleSheetsService:
             if sheet_name == 'Vocabulary':
                 worksheet = spreadsheet.add_worksheet(title=sheet_name, rows=1000, cols=5)
                 # Add headers for vocabulary
-                worksheet.update('A1:B1', [['Word', 'Definition']])
+                worksheet.update('A1:C1', [['Word', 'Definition', 'Last Updated']])
                 return worksheet
             elif sheet_name == 'MathProblems':
                 worksheet = spreadsheet.add_worksheet(title=sheet_name, rows=1000, cols=10)
@@ -61,25 +61,48 @@ class GoogleSheetsService:
     def save_vocabulary_word(self, word, definition):
         """Save a vocabulary word and its definition to the vocabulary worksheet."""
         try:
+            # Trim inputs to avoid issues
+            word = str(word).strip()
+            definition = str(definition).strip()
+            
+            # Skip empty words or definitions
+            if not word or not definition:
+                logger.warning("Skipping empty word or definition")
+                return False
+                
             # Get the Vocabulary worksheet
             vocab_worksheet = self._get_worksheet('Vocabulary')
+            
+            # Add timestamp as third column
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
             # Check if the word already exists
             try:
                 word_col = vocab_worksheet.col_values(1)
-                if word in word_col:
-                    # Word exists, update its definition
-                    row_idx = word_col.index(word) + 1  # +1 because sheets are 1-indexed
-                    vocab_worksheet.update_cell(row_idx, 2, definition)
-                    logger.info(f"Updated definition for word '{word}' in Google Sheets")
-                else:
+                word_lower = word.lower()
+                found = False
+                
+                # Case-insensitive search
+                for i, existing_word in enumerate(word_col):
+                    if existing_word and existing_word.lower() == word_lower:
+                        # Word exists, update its definition
+                        row_idx = i + 1  # +1 because sheets are 1-indexed
+                        vocab_worksheet.update_cell(row_idx, 2, definition)
+                        vocab_worksheet.update_cell(row_idx, 3, timestamp)
+                        logger.info(f"Updated definition for word '{word}' in Google Sheets")
+                        found = True
+                        break
+                
+                if not found:
                     # Word doesn't exist, append new row
-                    vocab_worksheet.append_row([word, definition])
+                    vocab_worksheet.append_row([word, definition, timestamp])
                     logger.info(f"Added new word '{word}' to Google Sheets")
+                
                 return True
             except ValueError:
                 # Word not found, append it
-                vocab_worksheet.append_row([word, definition])
+                vocab_worksheet.append_row([word, definition, timestamp])
                 logger.info(f"Added new word '{word}' to Google Sheets")
                 return True
                 
@@ -90,6 +113,11 @@ class GoogleSheetsService:
     def save_math_problem(self, problem):
         """Save a math problem to the MathProblems worksheet."""
         try:
+            # Skip if problem is None or not a dict
+            if not problem or not isinstance(problem, dict):
+                logger.warning("Invalid problem object - not saving to Google Sheets")
+                return False
+                
             # Get the MathProblems worksheet
             math_worksheet = self._get_worksheet('MathProblems')
             
@@ -97,21 +125,47 @@ class GoogleSheetsService:
             from datetime import datetime
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
+            # Clean and prepare data
+            problem_id = str(problem.get('id', '')).strip()
+            question = str(problem.get('question', '')).strip()
+            
+            # Skip if no ID or question
+            if not problem_id or not question:
+                logger.warning(f"Skipping problem with missing ID or question: {problem_id}")
+                return False
+            
+            # Convert answer to string
+            answer = problem.get('correct_answer', '')
+            if isinstance(answer, (int, float)):
+                answer = str(answer)
+            else:
+                answer = str(answer).strip()
+            
             # Prepare the row data
             row_data = [
-                problem.get('id', ''),
-                problem.get('question', ''),
-                str(problem.get('correct_answer', '')),
-                problem.get('category', ''),
-                problem.get('topic', ''),
-                problem.get('difficulty', ''),
-                problem.get('explanation', ''),
+                problem_id,
+                question,
+                answer,
+                str(problem.get('category', '')).strip(),
+                str(problem.get('topic', '')).strip(),
+                str(problem.get('difficulty', '')).strip(),
+                str(problem.get('explanation', '')).strip(),
                 timestamp
             ]
             
+            # Check if problem with this ID already exists
+            try:
+                id_col = math_worksheet.col_values(1)
+                if problem_id in id_col:
+                    # Problem exists, skip it to avoid duplicates
+                    logger.info(f"Problem ID {problem_id} already exists in Google Sheets, skipping")
+                    return True
+            except Exception as e:
+                logger.warning(f"Error checking for existing problem: {e}")
+            
             # Append the row to the worksheet
             math_worksheet.append_row(row_data)
-            logger.info(f"Saved math problem ID {problem.get('id')} to Google Sheets")
+            logger.info(f"Saved math problem ID {problem_id} to Google Sheets")
             return True
         except Exception as e:
             logger.error(f"Error saving math problem to Google Sheets: {e}")
