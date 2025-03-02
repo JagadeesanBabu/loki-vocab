@@ -1,4 +1,6 @@
 import openai
+import json
+import re
 from config import Config
 from openai.error import RateLimitError, OpenAIError
 import logging
@@ -142,7 +144,6 @@ def generate_math_problem(category, topic, difficulty):
         # Extract the JSON part from the response
         try:
             # Find JSON if it's embedded in other text
-            import re
             json_match = re.search(r'\{.*\}', content, re.DOTALL)
             if json_match:
                 content = json_match.group(0)

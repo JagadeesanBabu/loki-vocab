@@ -118,33 +118,35 @@ def get_next_math_problem():
     if not session.get('math_problems'):
         # Generate more problems using OpenAI API
         new_problems = []
-        for i in range(5):  # Generate 5 problems to start
-            params = get_random_problem_params()
-            try:
-                problem = generate_math_problem(
-                    category=params['category'], 
-                    topic=params['topic'], 
-                    difficulty=params['difficulty']
-                )
-                if problem:
-                    # Generate a unique ID for the problem
-                    from uuid import uuid4
-                    problem['id'] = str(uuid4())[:8]  # First 8 chars of UUID
-                    new_problems.append(problem)
-                    
-                    # Save to Google Sheets if possible
-                    if 'sheet_service' in session:
-                        try:
-                            service_info = session['sheet_service']
-                            sheets_service = GoogleSheetsService(
-                                service_info['service_account_info'], 
-                                service_info['spreadsheet_id']
-                            )
-                            sheets_service.save_math_problem(problem)
-                        except Exception as e:
-                            logger.error(f"Error saving problem to Google Sheets: {e}")
-            except Exception as e:
-                logger.error(f"Error generating math problem: {e}")
+        
+        # Generate just 1 problem to start (to avoid timeouts)
+        # We'll generate more problems in the background later
+        params = get_random_problem_params()
+        try:
+            problem = generate_math_problem(
+                category=params['category'], 
+                topic=params['topic'], 
+                difficulty=params['difficulty']
+            )
+            if problem:
+                # Generate a unique ID for the problem
+                from uuid import uuid4
+                problem['id'] = str(uuid4())[:8]  # First 8 chars of UUID
+                new_problems.append(problem)
+                
+                # Save to Google Sheets if possible
+                if 'sheet_service' in session:
+                    try:
+                        service_info = session['sheet_service']
+                        sheets_service = GoogleSheetsService(
+                            service_info['service_account_info'], 
+                            service_info['spreadsheet_id']
+                        )
+                        sheets_service.save_math_problem(problem)
+                    except Exception as e:
+                        logger.error(f"Error saving problem to Google Sheets: {e}")
+        except Exception as e:
+            logger.error(f"Error generating math problem: {e}")
         
         # Fall back to sample problems if API fails and we couldn't load any
         if not new_problems:
@@ -153,34 +155,34 @@ def get_next_math_problem():
         session['math_problems'] = new_problems
         session.modified = True
     
-    # If we're running low on problems, generate more
-    if len(session['math_problems']) < 3:
+    # If we're running low on problems, generate just one more (to avoid timeouts)
+    if len(session['math_problems']) < 2:
         new_problems = []
         params = get_random_problem_params()
         try:
-            for i in range(3):  # Generate 3 more problems
-                problem = generate_math_problem(
-                    category=params['category'], 
-                    topic=params['topic'], 
-                    difficulty=params['difficulty']
-                )
-                if problem:
-                    # Generate a unique ID for the problem
-                    from uuid import uuid4
-                    problem['id'] = str(uuid4())[:8]  # First 8 chars of UUID
-                    new_problems.append(problem)
-                    
-                    # Save to Google Sheets if possible
-                    if 'sheet_service' in session:
-                        try:
-                            service_info = session['sheet_service']
-                            sheets_service = GoogleSheetsService(
-                                service_info['service_account_info'], 
-                                service_info['spreadsheet_id']
-                            )
-                            sheets_service.save_math_problem(problem)
-                        except Exception as e:
-                            logger.error(f"Error saving problem to Google Sheets: {e}")
+            # Generate just 1 more problem to avoid timeouts
+            problem = generate_math_problem(
+                category=params['category'], 
+                topic=params['topic'], 
+                difficulty=params['difficulty']
+            )
+            if problem:
+                # Generate a unique ID for the problem
+                from uuid import uuid4
+                problem['id'] = str(uuid4())[:8]  # First 8 chars of UUID
+                new_problems.append(problem)
+                
+                # Save to Google Sheets if possible
+                if 'sheet_service' in session:
+                    try:
+                        service_info = session['sheet_service']
+                        sheets_service = GoogleSheetsService(
+                            service_info['service_account_info'], 
+                            service_info['spreadsheet_id']
+                        )
+                        sheets_service.save_math_problem(problem)
+                    except Exception as e:
+                        logger.error(f"Error saving problem to Google Sheets: {e}")
         except Exception as e:
             logger.error(f"Error generating additional math problems: {e}")
         
