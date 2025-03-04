@@ -106,13 +106,26 @@ def get_next_math_problem():
             if loaded_problems:
                 logger.info(f"Loaded {len(loaded_problems)} math problems from Google Sheets")
                 session['math_problems'] = loaded_problems
-                session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
             else:
                 logger.info("No math problems found in Google Sheets, generating new ones")
                 session['math_problems'] = []
+                
+            # Always set the sheet_service in the session regardless of whether problems were loaded
+            session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
         except Exception as e:
             logger.error(f"Error loading math problems from Google Sheets: {e}")
             session['math_problems'] = []
+            
+            # Even when there's an error, try to set up sheet_service if we have the required info
+            try:
+                if Config.GOOGLE_CREDENTIALS_JSON and Config.SPREADSHEET_ID:
+                    logger.info("Setting up sheet_service despite loading error")
+                    session['sheet_service'] = {
+                        'service_account_info': service_account_file_info, 
+                        'spreadsheet_id': spreadsheet_id
+                    }
+            except Exception as setup_error:
+                logger.error(f"Failed to set up sheet_service after loading error: {setup_error}")
     
     # If we have no problems (either no cached or no loaded), generate some
     if not session.get('math_problems'):
@@ -138,13 +151,20 @@ def get_next_math_problem():
                 if 'sheet_service' in session:
                     try:
                         service_info = session['sheet_service']
+                        logger.info(f"Attempting to save math problem ID {problem['id']} to Google Sheets")
                         sheets_service = GoogleSheetsService(
                             service_info['service_account_info'], 
                             service_info['spreadsheet_id']
                         )
-                        sheets_service.save_math_problem(problem)
+                        result = sheets_service.save_math_problem(problem)
+                        if result:
+                            logger.info(f"Successfully saved math problem ID {problem['id']} to Google Sheets")
+                        else:
+                            logger.warning(f"Failed to save math problem ID {problem['id']} to Google Sheets")
                     except Exception as e:
                         logger.error(f"Error saving problem to Google Sheets: {e}")
+                else:
+                    logger.warning("Cannot save math problem: sheet_service not in session")
         except Exception as e:
             logger.error(f"Error generating math problem: {e}")
         
@@ -176,13 +196,20 @@ def get_next_math_problem():
                 if 'sheet_service' in session:
                     try:
                         service_info = session['sheet_service']
+                        logger.info(f"Attempting to save additional math problem ID {problem['id']} to Google Sheets")
                         sheets_service = GoogleSheetsService(
                             service_info['service_account_info'], 
                             service_info['spreadsheet_id']
                         )
-                        sheets_service.save_math_problem(problem)
+                        result = sheets_service.save_math_problem(problem)
+                        if result:
+                            logger.info(f"Successfully saved additional math problem ID {problem['id']} to Google Sheets")
+                        else:
+                            logger.warning(f"Failed to save additional math problem ID {problem['id']} to Google Sheets")
                     except Exception as e:
-                        logger.error(f"Error saving problem to Google Sheets: {e}")
+                        logger.error(f"Error saving additional problem to Google Sheets: {e}")
+                else:
+                    logger.warning("Cannot save additional math problem: sheet_service not in session")
         except Exception as e:
             logger.error(f"Error generating additional math problems: {e}")
         
