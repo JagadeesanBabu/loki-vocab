@@ -107,45 +107,83 @@ class WordCount(db.Model):
         return db.session.query(db.func.sum(cls.count)).scalar() or 0
     # get_total_counts() returns the total number of times a word has been answered correctly ordered by the date of the last update.
     
+    from sqlalchemy import func
+    from sqlalchemy.sql import over
+
     @classmethod
     def get_daily_correct_counts_by_user(cls, start_date, end_date) -> dict:
-        daily_correct_count_by_user_row = db.session.query(
+        subquery = db.session.query(
+            cls.updated_by.label('updated_by'),
             func.date(cls.updated_at).label('date'),
-            func.count(cls.count).label('total_count'),
-            cls.updated_by.label('updated_by')
+            cls.count.label('current_count'),
+            func.lag(cls.count).over(
+                partition_by=cls.updated_by,
+                order_by=func.date(cls.updated_at)
+            ).label('previous_count')
         ).filter(
             cls.updated_at >= start_date,
-            cls.updated_at <= end_date,
-            cls.count > 0
-        ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
-        daily_correct_count_by_user = {(row.date, row.updated_by): row.total_count for row in daily_correct_count_by_user_row}
+            cls.updated_at <= end_date
+        ).subquery()
+
+        query = db.session.query(
+            subquery.c.date,
+            (subquery.c.current_count - func.coalesce(subquery.c.previous_count, 0)).label('daily_count'),
+            subquery.c.updated_by
+        ).order_by(subquery.c.date)
+
+        daily_correct_count_by_user = {
+            (row.date, row.updated_by): row.daily_count for row in query.all()
+        }
         return daily_correct_count_by_user
     
     @classmethod
-    def get_daily_incorrect_counts(cls, start_date, end_date):
-        return db.session.query(
+    def get_daily_incorrect_counts(cls, start_date, end_date) -> dict:
+        subquery = db.session.query(
             func.date(cls.updated_at).label('date'),
-            func.sum(cls.incorrect_count).label('total_incorrect_count'),
-            cls.updated_by.label('updated_by')
+            cls.incorrect_count.label('current_incorrect_count'),
+            func.lag(cls.incorrect_count).over(
+                order_by=func.date(cls.updated_at)
+            ).label('previous_incorrect_count')
         ).filter(
             cls.updated_at >= start_date,
-            cls.updated_at <= end_date,
-            cls.incorrect_count > 0
-        ).group_by(func.date(cls.updated_at)).order_by(func.date(cls.updated_at)).all()
-   
+            cls.updated_at <= end_date
+        ).subquery()
+
+        query = db.session.query(
+            subquery.c.date,
+            (subquery.c.current_incorrect_count - func.coalesce(subquery.c.previous_incorrect_count, 0)).label('daily_incorrect_count')
+        ).order_by(subquery.c.date)
+
+        daily_incorrect_counts = {
+            row.date: row.daily_incorrect_count for row in query.all()
+        }
+        return daily_incorrect_counts
+    
     
     @classmethod
     def get_daily_incorrect_counts_by_user(cls, start_date, end_date) -> dict:
-        daily_incorrect_count_by_user = db.session.query(
-            func.date(cls.updated_at).label('date'),
+        subquery = db.session.query(
             cls.updated_by.label('updated_by'),
-            func.count(cls.incorrect_count).label('total_incorrect_count')
+            func.date(cls.updated_at).label('date'),
+            cls.incorrect_count.label('current_incorrect_count'),
+            func.lag(cls.incorrect_count).over(
+                partition_by=cls.updated_by,
+                order_by=func.date(cls.updated_at)
+            ).label('previous_incorrect_count')
         ).filter(
             cls.updated_at >= start_date,
-            cls.updated_at <= end_date,
-            cls.incorrect_count > 0
-        ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
-        daily_incorrect_count_by_user = {(row.date, row.updated_by): row.total_incorrect_count for row in daily_incorrect_count_by_user}
+            cls.updated_at <= end_date
+        ).subquery()
+
+        query = db.session.query(
+            subquery.c.date,
+            (subquery.c.current_incorrect_count - func.coalesce(subquery.c.previous_incorrect_count, 0)).label('daily_incorrect_count'),
+            subquery.c.updated_by
+        ).order_by(subquery.c.date)
+
+        daily_incorrect_count_by_user = {
+            (row.date, row.updated_by): row.daily_incorrect_count for row in query.all()
+        }
         return daily_incorrect_count_by_user
 
 from sqlalchemy.dialects.postgresql import JSON
