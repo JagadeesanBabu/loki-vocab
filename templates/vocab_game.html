@@ -49,7 +49,7 @@
                 </form>
             {% else %}
                 <p>You have completed all the words!</p>
-                <form method="GET" action="{{ url_for('vocab_game_blueprint.reset_score') }}" onsubmit="disableButton(this)">
+                <form method="GET" action="{{ url_for('vocab_game_blueprint.reset_score_route') }}" onsubmit="disableButton(this)">
                     <button type="submit" class="reset-button" id="reset-button">Reset Score and Start Over <div class="spinner"></div></button>
                 </form>
             {% endif %}

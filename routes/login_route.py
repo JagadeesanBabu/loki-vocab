@@ -14,10 +14,15 @@ def login():
         user = authenticate_user(username, password)
         if user:
             login_user(user)
-            return redirect(url_for('vocab_game_blueprint.vocab_game'))
+            return redirect(url_for('login_blueprint.select_quiz'))
         else:
             flash('Invalid username or password')
     return render_template('login.html')
+
+@login_blueprint.route('/select')
+@login_required
+def select_quiz():
+    return render_template('select_quiz.html')
 
 # Logout route
 @login_blueprint.route('/logout')
