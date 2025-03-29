@@ -10,12 +10,26 @@ import aiohttp
 from openai import OpenAI, AsyncOpenAI, RateLimitError, APIError
 from config import Config
 from services.google_sheet_service import GoogleSheetsService
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
+# Load environment variables
+dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'local.env')
+if os.path.exists(dotenv_path):
+    logger.info(f"Loading environment variables from {dotenv_path}")
+    load_dotenv(dotenv_path)
+    logger.info(f"OpenAI API Key loaded: {bool(os.getenv('OPENAI_API_KEY'))}")
+else:
+    logger.error(f"Environment file not found: {dotenv_path}")
+
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-async_client = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+api_key = os.getenv('OPENAI_API_KEY')
+if not api_key:
+    raise ValueError("OpenAI API key not found in environment variables")
+
+client = OpenAI(api_key=api_key)
+async_client = AsyncOpenAI(api_key=api_key)
 
 class PersistentCache:
     """A cache that persists data to disk periodically."""
@@ -61,88 +75,142 @@ class OpenAIOptimizer:
 
     @classmethod
     async def fetch_word_data(cls, word: str) -> Dict:
-        """Fetch word data from OpenAI API with caching."""
+        """Fetch word data from OpenAI API with caching and retries."""
         cached_data = cls._cache.get(word)
         if cached_data:
             logger.info(f"Cache hit for word: {word}")
             return cached_data
 
-        try:
-            response = await async_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a vocabulary teacher providing concise definitions and related words."},
-                    {"role": "user", "content": f"""Define the word '{word}' and provide incorrect options and similar words. Format as JSON:
+        max_retries = 3
+        retry_delay = 1  # seconds
+
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Attempt {attempt + 1}/{max_retries} - Fetching definition for word: {word}")
+                logger.info(f"Using API key: {api_key[:8]}...")
+                
+                response = await async_client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a vocabulary teacher. Provide clear definitions, plausible incorrect options, and related words."},
+                        {"role": "user", "content": f"""Define '{word}' with a clear definition and related information. Format as JSON:
 {{
-    "definition": "A clear, single-sentence definition without elaboration",
-    "incorrect_options": ["short incorrect definition 1", "short incorrect definition 2", "short incorrect definition 3"],
+    "definition": "A clear, concise definition of {word}",
+    "incorrect_options": [
+        "A plausible but incorrect definition",
+        "Another believable but wrong meaning",
+        "A third reasonable but incorrect definition"
+    ],
     "similar_words": [
         {{
-            "word": "similar_word1",
-            "definition": "brief definition of similar word 1"
+            "word": "a synonym or related word",
+            "definition": "brief definition of this related word"
         }},
         {{
-            "word": "similar_word2",
-            "definition": "brief definition of similar word 2"
+            "word": "another related word",
+            "definition": "brief definition of this word"
         }},
         {{
-            "word": "similar_word3",
-            "definition": "brief definition of similar word 3"
+            "word": "a third related word",
+            "definition": "brief definition of this word"
         }}
     ]
-}}
-Keep all definitions under 15 words. Make incorrect options plausible but clearly wrong."""}
-                ]
-            )
-            
-            # Parse the response
-            content = response.choices[0].message.content
-            try:
-                word_data = json.loads(content)
-                # Validate the response format
-                required_keys = ['definition', 'incorrect_options', 'similar_words']
-                if not all(key in word_data for key in required_keys):
-                    logger.error(f"Invalid response format for word '{word}': missing required keys")
-                    return cls._get_fallback_word_data(word)
-                if not isinstance(word_data['incorrect_options'], list) or not isinstance(word_data['similar_words'], list):
-                    logger.error(f"Invalid response format for word '{word}': arrays not properly formatted")
-                    return cls._get_fallback_word_data(word)
-                if len(word_data['incorrect_options']) != 3 or len(word_data['similar_words']) != 3:
-                    logger.error(f"Invalid response format for word '{word}': wrong number of options/similar words")
-                    return cls._get_fallback_word_data(word)
+}}"""}
+                    ],
+                    temperature=0.7,
+                    max_tokens=500,
+                    presence_penalty=0.6,
+                    frequency_penalty=0.5
+                )
                 
-                # Ensure definitions are concise
-                if len(word_data['definition'].split()) > 15:
-                    word_data['definition'] = ' '.join(word_data['definition'].split()[:15]) + '.'
-                for i, opt in enumerate(word_data['incorrect_options']):
-                    if len(opt.split()) > 15:
-                        word_data['incorrect_options'][i] = ' '.join(opt.split()[:15]) + '.'
-                for word_obj in word_data['similar_words']:
-                    if len(word_obj['definition'].split()) > 15:
-                        word_obj['definition'] = ' '.join(word_obj['definition'].split()[:15]) + '.'
+                content = response.choices[0].message.content
+                logger.info(f"Received response for word {word}: {content[:100]}...")
                 
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse JSON response for word '{word}'")
-                return cls._get_fallback_word_data(word)
+                try:
+                    word_data = json.loads(content)
+                    
+                    # Validate response format
+                    if not cls._validate_word_data(word_data):
+                        raise ValueError("Invalid response format")
+                    
+                    # Process and clean the data
+                    word_data = cls._process_word_data(word_data)
+                    
+                    # Cache the valid result
+                    cls._cache.set(word, word_data)
+                    logger.info(f"Successfully processed and cached word data for: {word}")
+                    return word_data
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse JSON response for word '{word}'. Error: {str(e)}. Response: {content}")
+                    if attempt == max_retries - 1:
+                        return cls._get_fallback_word_data(word)
+                    await asyncio.sleep(retry_delay)
+                    continue
+                
+            except RateLimitError as e:
+                logger.error(f"Rate limit exceeded for word '{word}'. Error: {str(e)}")
+                if attempt == max_retries - 1:
+                    return cls._get_fallback_word_data(word)
+                await asyncio.sleep(retry_delay * 2)  # Longer delay for rate limits
+                continue
+                
+            except APIError as e:
+                logger.error(f"OpenAI API error for word '{word}'. Error: {str(e)}")
+                if attempt == max_retries - 1:
+                    return cls._get_fallback_word_data(word)
+                await asyncio.sleep(retry_delay)
+                continue
+                
+            except Exception as e:
+                logger.error(f"Unexpected error fetching word data for '{word}'. Error: {str(e)}")
+                if attempt == max_retries - 1:
+                    return cls._get_fallback_word_data(word)
+                await asyncio.sleep(retry_delay)
+                continue
+        
+        return cls._get_fallback_word_data(word)
+
+    @classmethod
+    def _validate_word_data(cls, data: Dict) -> bool:
+        """Validate the word data format."""
+        if not isinstance(data, dict):
+            return False
             
-            # Update token usage
-            cls._token_usage['prompt'] += response.usage.prompt_tokens
-            cls._token_usage['completion'] += response.usage.completion_tokens
-            cls._token_usage['total'] += response.usage.total_tokens
+        required_keys = ['definition', 'incorrect_options', 'similar_words']
+        if not all(key in data for key in required_keys):
+            return False
             
-            # Cache the result
-            cls._cache.set(word, word_data)
-            return word_data
+        if not isinstance(data['incorrect_options'], list) or len(data['incorrect_options']) != 3:
+            return False
             
-        except RateLimitError:
-            logger.error("Rate limit exceeded")
-            return cls._get_fallback_word_data(word)
-        except APIError as e:
-            logger.error(f"OpenAI API error: {e}")
-            return cls._get_fallback_word_data(word)
-        except Exception as e:
-            logger.error(f"Error fetching word data: {e}")
-            return cls._get_fallback_word_data(word)
+        if not isinstance(data['similar_words'], list) or len(data['similar_words']) != 3:
+            return False
+            
+        for word_obj in data['similar_words']:
+            if not isinstance(word_obj, dict) or 'word' not in word_obj or 'definition' not in word_obj:
+                return False
+                
+        return True
+
+    @classmethod
+    def _process_word_data(cls, data: Dict) -> Dict:
+        """Process and clean the word data."""
+        # Ensure definition is concise
+        if len(data['definition'].split()) > 15:
+            data['definition'] = ' '.join(data['definition'].split()[:15]) + '.'
+            
+        # Clean incorrect options
+        for i, opt in enumerate(data['incorrect_options']):
+            if len(opt.split()) > 15:
+                data['incorrect_options'][i] = ' '.join(opt.split()[:15]) + '.'
+                
+        # Clean similar words
+        for word_obj in data['similar_words']:
+            if len(word_obj['definition'].split()) > 15:
+                word_obj['definition'] = ' '.join(word_obj['definition'].split()[:15]) + '.'
+                
+        return data
 
     @classmethod
     def _get_fallback_word_data(cls, word: str) -> Dict:
