@@ -2,8 +2,11 @@ import random
 import json
 from flask import session
 from services.auth_service import clear_session_files
-from services.openai_service import generate_math_problem, generate_problem_explanation
+from services.optimization_service import OpenAIOptimizer, MathSheetsOptimizer
 import logging
+from flask_login import current_user
+from datetime import datetime
+
 logger = logging.getLogger(__name__)
 
 # GL school level categories and topics
@@ -69,224 +72,148 @@ SAMPLE_PROBLEMS = [
 
 def reset_math_score():
     """Resets the user's math score."""
-    if 'math_score' in session:
-        session['math_score'] = {'correct': 0, 'incorrect': 0}
-    if 'math_problems_today' in session:
-        session['math_problems_today'] = 0
-    if 'incorrect_math_answers' in session:
-        session['incorrect_math_answers'] = []
+    clear_session_files()
+    session['math_score'] = {'correct': 0, 'incorrect': 0}
     session.modified = True
 
-def get_random_problem_params():
-    """Generates random problem parameters for variety."""
+async def get_next_math_problem():
+    """Gets the next math problem."""
+    # Randomly select category, topic, and difficulty
     category = random.choice(list(MATH_CATEGORIES.keys()))
     topic = random.choice(MATH_CATEGORIES[category])
     difficulty = random.choice(DIFFICULTY_LEVELS)
     
-    return {
-        'category': category,
-        'topic': topic,
-        'difficulty': difficulty
-    }
-
-def get_next_math_problem():
-    """Fetches the next math problem with options."""
-    from config import Config
-    from services.google_sheet_service import GoogleSheetsService
-    
-    # Check if we have cached problems
-    if 'math_problems' not in session:
-        # First, try to load problems from Google Sheets
-        try:
-            service_account_file_info = Config.GOOGLE_CREDENTIALS_JSON
-            spreadsheet_id = Config.SPREADSHEET_ID
-            sheets_service = GoogleSheetsService(service_account_file_info, spreadsheet_id)
-            loaded_problems = sheets_service.load_math_problems()
+    try:
+        # Use optimized OpenAI service to generate problem
+        problem = await OpenAIOptimizer.generate_math_problem(category, topic, difficulty)
+        if not problem:
+            logger.error("Failed to generate math problem")
+            return None
             
-            if loaded_problems:
-                logger.info(f"Loaded {len(loaded_problems)} math problems from Google Sheets")
-                session['math_problems'] = loaded_problems
-            else:
-                logger.info("No math problems found in Google Sheets, generating new ones")
-                session['math_problems'] = []
-                
-            # Always set the sheet_service in the session regardless of whether problems were loaded
-            session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
-        except Exception as e:
-            logger.error(f"Error loading math problems from Google Sheets: {e}")
-            session['math_problems'] = []
-            
-            # Even when there's an error, try to set up sheet_service if we have the required info
-            try:
-                if Config.GOOGLE_CREDENTIALS_JSON and Config.SPREADSHEET_ID:
-                    logger.info("Setting up sheet_service despite loading error")
-                    session['sheet_service'] = {
-                        'service_account_info': service_account_file_info, 
-                        'spreadsheet_id': spreadsheet_id
-                    }
-            except Exception as setup_error:
-                logger.error(f"Failed to set up sheet_service after loading error: {setup_error}")
-    
-    # If we have no problems (either no cached or no loaded), generate some
-    if not session.get('math_problems'):
-        # Generate more problems using OpenAI API
-        new_problems = []
+        # Add unique ID if not present
+        if 'id' not in problem:
+            problem['id'] = f"{category}_{topic}_{difficulty}_{random.randint(1000, 9999)}"
         
-        # Generate just 1 problem to start (to avoid timeouts)
-        # We'll generate more problems in the background later
-        params = get_random_problem_params()
-        try:
-            problem = generate_math_problem(
-                category=params['category'], 
-                topic=params['topic'], 
-                difficulty=params['difficulty']
-            )
-            if problem:
-                # Generate a unique ID for the problem
-                from uuid import uuid4
-                problem['id'] = str(uuid4())[:8]  # First 8 chars of UUID
-                new_problems.append(problem)
-                
-                # Save to Google Sheets if possible
-                if 'sheet_service' in session:
-                    try:
-                        service_info = session['sheet_service']
-                        logger.info(f"Attempting to save math problem ID {problem['id']} to Google Sheets")
-                        sheets_service = GoogleSheetsService(
-                            service_info['service_account_info'], 
-                            service_info['spreadsheet_id']
-                        )
-                        result = sheets_service.save_math_problem(problem)
-                        if result:
-                            logger.info(f"Successfully saved math problem ID {problem['id']} to Google Sheets")
-                        else:
-                            logger.warning(f"Failed to save math problem ID {problem['id']} to Google Sheets")
-                    except Exception as e:
-                        logger.error(f"Error saving problem to Google Sheets: {e}")
-                else:
-                    logger.warning("Cannot save math problem: sheet_service not in session")
-        except Exception as e:
-            logger.error(f"Error generating math problem: {e}")
+        # Queue update to Google Sheets in background
+        MathSheetsOptimizer.queue_update(problem)
         
-        # Fall back to sample problems if API fails and we couldn't load any
-        if not new_problems:
-            new_problems = SAMPLE_PROBLEMS.copy()
-        
-        session['math_problems'] = new_problems
-        session.modified = True
-    
-    # If we're running low on problems, generate just one more (to avoid timeouts)
-    if len(session['math_problems']) < 2:
-        new_problems = []
-        params = get_random_problem_params()
-        try:
-            # Generate just 1 more problem to avoid timeouts
-            problem = generate_math_problem(
-                category=params['category'], 
-                topic=params['topic'], 
-                difficulty=params['difficulty']
-            )
-            if problem:
-                # Generate a unique ID for the problem
-                from uuid import uuid4
-                problem['id'] = str(uuid4())[:8]  # First 8 chars of UUID
-                new_problems.append(problem)
-                
-                # Save to Google Sheets if possible
-                if 'sheet_service' in session:
-                    try:
-                        service_info = session['sheet_service']
-                        logger.info(f"Attempting to save additional math problem ID {problem['id']} to Google Sheets")
-                        sheets_service = GoogleSheetsService(
-                            service_info['service_account_info'], 
-                            service_info['spreadsheet_id']
-                        )
-                        result = sheets_service.save_math_problem(problem)
-                        if result:
-                            logger.info(f"Successfully saved additional math problem ID {problem['id']} to Google Sheets")
-                        else:
-                            logger.warning(f"Failed to save additional math problem ID {problem['id']} to Google Sheets")
-                    except Exception as e:
-                        logger.error(f"Error saving additional problem to Google Sheets: {e}")
-                else:
-                    logger.warning("Cannot save additional math problem: sheet_service not in session")
-        except Exception as e:
-            logger.error(f"Error generating additional math problems: {e}")
-        
-        session['math_problems'].extend(new_problems)
-        session.modified = True
-    
-    # Pick a random problem from the list
-    problem = random.choice(session['math_problems'])
-    
-    # Remove the selected problem from the list to avoid repetition in this session
-    session['math_problems'] = [p for p in session['math_problems'] if p.get('id') != problem.get('id')]
-    session.modified = True
-    
-    return {
-        'problem': problem,
-        'correct_answer': problem['correct_answer']
-    }
+        return problem
+    except Exception as e:
+        logger.error(f"Error generating math problem: {e}")
+        return None
 
-def check_math_answer(user_answer, problem, correct_answer):
+async def check_math_answer(user_answer, problem):
     """Checks the user's answer to a math problem and updates the score."""
+    if not problem or 'correct_answer' not in problem:
+        return {
+            'result_message': "Error: Invalid problem data",
+            'answer_status': "error",
+            'updated_score': session.get('math_score', {'correct': 0, 'incorrect': 0}),
+            'explanation': "Could not verify answer due to missing problem data."
+        }
+    
+    correct_answer = problem['correct_answer']
+    is_visual = problem.get('is_visual', False)
     
     # Compare answers, with flexibility for numeric values
     is_correct = False
     
-    # Convert both to same type if possible
-    if isinstance(user_answer, (int, float)) and isinstance(correct_answer, (int, float)):
-        # For numerical answers, allow small differences due to rounding
-        is_correct = abs(user_answer - correct_answer) < 0.001
+    if is_visual:
+        # For visual puzzles, do a more flexible string comparison
+        user_answer = str(user_answer).lower().strip()
+        correct_answer = str(correct_answer).lower().strip()
+        # Split into words and check if key elements are present
+        user_words = set(user_answer.split())
+        correct_words = set(correct_answer.split())
+        # Calculate similarity score
+        common_words = user_words.intersection(correct_words)
+        similarity_score = len(common_words) / max(len(user_words), len(correct_words))
+        is_correct = similarity_score > 0.7  # Consider correct if 70% similar
     else:
-        # For string answers, exact match required
-        is_correct = str(user_answer).lower() == str(correct_answer).lower()
-    
-    explanation = problem.get('explanation', '')
-    
-    # If no explanation exists, generate one
-    if not explanation and is_correct is False:
+        # For regular math problems, use numeric comparison
         try:
-            explanation = generate_problem_explanation(problem['question'], correct_answer)
+            if isinstance(correct_answer, (int, float)):
+                user_answer = float(user_answer)
+                is_correct = abs(user_answer - float(correct_answer)) < 0.001
+            else:
+                is_correct = str(user_answer).lower().strip() == str(correct_answer).lower().strip()
+        except ValueError:
+            # If conversion fails, do string comparison
+            is_correct = str(user_answer).lower().strip() == str(correct_answer).lower().strip()
+    
+    # Get or generate explanation
+    explanation = problem.get('explanation', '')
+    if is_visual:
+        pattern_explanation = problem.get('pattern_explanation', '')
+        if pattern_explanation:
+            explanation = f"{explanation}\n\nPattern: {pattern_explanation}"
+    elif not explanation and not is_correct:
+        try:
+            explanation = await OpenAIOptimizer.generate_problem_explanation(
+                problem['question'],
+                str(correct_answer)
+            )
         except Exception as e:
             logger.error(f"Error generating problem explanation: {e}")
-            explanation = "No explanation available."
+            explanation = "Explanation not available at the moment."
+    
+    # Initialize or update score in session
+    if 'math_score' not in session:
+        session['math_score'] = {'correct': 0, 'incorrect': 0}
     
     if is_correct:
         session['math_score']['correct'] += 1
-        result_message = f"Correct! The answer is {correct_answer}."
+        result_message = "Correct! " + (f"The pattern continues with {correct_answer}." if is_visual else f"The answer is {correct_answer}.")
         answer_status = "correct"
     else:
         session['math_score']['incorrect'] += 1
-        result_message = f"Incorrect. The correct answer is {correct_answer}."
+        result_message = "Incorrect. " + (f"The pattern continues with {correct_answer}." if is_visual else f"The correct answer is {correct_answer}.")
         answer_status = "incorrect"
         
-        # Store the incorrect answer details for the summary page
+        # Store incorrect answer for summary
         if 'incorrect_math_answers' not in session:
             session['incorrect_math_answers'] = []
-        session['incorrect_math_answers'].append({
+        incorrect_answer = {
             'question': problem['question'],
             'user_answer': user_answer,
             'correct_answer': correct_answer,
-            'explanation': explanation
-        })
+            'explanation': explanation,
+            'is_visual': is_visual
+        }
+        if is_visual and 'figures' in problem:
+            incorrect_answer['figures'] = problem['figures']
+        session['incorrect_math_answers'].append(incorrect_answer)
+    
+    # Ensure session is marked as modified
+    session.modified = True
+    
+    # Queue stats update to Google Sheets
+    stats_data = {
+        'user': current_user.username if current_user and current_user.is_authenticated else 'anonymous',
+        'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'category': problem.get('category', ''),
+        'difficulty': problem.get('difficulty', ''),
+        'correct': 1 if is_correct else 0,
+        'incorrect': 0 if is_correct else 1,
+        'total_time': session.get('last_answer_time', 0),
+        'avg_time': session.get('last_answer_time', 0),  # For now, just use the last time
+        'is_visual': is_visual
+    }
+    
+    # Force immediate update to Google Sheets
+    MathSheetsOptimizer.queue_stats_update(stats_data)
     
     return {
         'result_message': result_message,
-        'correct_answer': correct_answer,
         'answer_status': answer_status,
         'updated_score': session['math_score'],
         'explanation': explanation
     }
 
 def get_math_summary():
-    """Aggregates the summary of math problem results."""
-    correct_answers = session.get('math_score', {}).get('correct', 0)
-    incorrect_answers = session.get('math_score', {}).get('incorrect', 0)
-    total_answers = correct_answers + incorrect_answers
+    """Gets the summary of math practice session."""
     return {
-        'correct_answers': correct_answers,
-        'incorrect_answers': incorrect_answers,
-        'total_answers': total_answers,
+        'correct_answers': session.get('math_score', {}).get('correct', 0),
+        'incorrect_answers': session.get('math_score', {}).get('incorrect', 0),
         'incorrect_answer_details': session.get('incorrect_math_answers', [])
     }

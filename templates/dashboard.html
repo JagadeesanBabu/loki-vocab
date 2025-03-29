@@ -12,7 +12,10 @@
         <h1>Progress Dashboard</h1>
         <div class="header">
             <a href="{{ url_for('vocab_game_blueprint.vocab_game') }}" class="quiz-link" id="quiz-link">
-                Go2Quiz <div class="spinner"></div>
+                Vocabulary Quiz <div class="spinner"></div>
+            </a>
+            <a href="{{ url_for('math_game_blueprint.math_game') }}" class="quiz-link" id="math-quiz-link">
+                Math Quiz <div class="spinner"></div>
             </a>
             <a href="{{ url_for('vocab_game_blueprint.summary') }}" class="summary-link" id="summary-link">
                 Summary <div class="spinner"></div>
@@ -30,22 +33,35 @@
         </div>
         {% endif %}
 
-        <div class="Daily-charts">
-            <h2>Progress Dashboard Last Month</h2>
-            <canvas id="dailyCountsChart"></canvas>
+        <div class="charts-container">
+            <div class="chart-section">
+                <h2>Vocabulary Progress Last Month</h2>
+                <canvas id="dailyCountsChart"></canvas>
+            </div>
+
+            <div class="chart-section">
+                <h2>Math Progress by Category</h2>
+                <canvas id="mathCategoryChart"></canvas>
+            </div>
+
+            <div class="chart-section">
+                <h2>Math Progress by Difficulty</h2>
+                <canvas id="mathDifficultyChart"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
         (function () {
-            const ctx = document.getElementById('dailyCountsChart').getContext('2d');
+            // Vocabulary Chart
+            const vocabCtx = document.getElementById('dailyCountsChart').getContext('2d');
             const dates = {{ dates|tojson|safe }};
             const correct_counts_by_loke = {{ correct_counts_by_user_loke|tojson|safe }};
             const correct_counts_by_adarsh = {{ correct_counts_by_user_adarsh|tojson|safe }};
             const incorrect_counts_by_user_adarsh = {{ incorrect_counts_by_user_adarsh|tojson|safe }};
             const incorrect_counts_by_user_loke = {{ incorrect_counts_by_user_loke|tojson|safe }};
 
-            const data = {
+            const vocabData = {
                 labels: dates,
                 datasets: [
                     {
@@ -79,9 +95,9 @@
                 ]
             };
 
-            const config = {
+            const vocabConfig = {
                 type: 'bar',
-                data: data,
+                data: vocabData,
                 options: {
                     scales: {
                         x: {
@@ -115,7 +131,133 @@
                 }
             };
 
-            const dailyCountsChart = new Chart(ctx, config);
+            new Chart(vocabCtx, vocabConfig);
+
+            // Math Category Chart
+            const categoryCtx = document.getElementById('mathCategoryChart').getContext('2d');
+            const categories = {{ categories|tojson|safe }};
+            const mathCategoryStats = {{ math_category_stats|tojson|safe }};
+
+            const categoryData = {
+                labels: categories,
+                datasets: [
+                    {
+                        label: 'Loke Correct',
+                        data: categories.map(cat => mathCategoryStats.loke[cat]?.correct || 0),
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Loke Incorrect',
+                        data: categories.map(cat => mathCategoryStats.loke[cat]?.incorrect || 0),
+                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Adarsh Correct',
+                        data: categories.map(cat => mathCategoryStats.adarsh[cat]?.correct || 0),
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Adarsh Incorrect',
+                        data: categories.map(cat => mathCategoryStats.adarsh[cat]?.incorrect || 0),
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            };
+
+            const categoryConfig = {
+                type: 'bar',
+                data: categoryData,
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Category'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    }
+                }
+            };
+
+            new Chart(categoryCtx, categoryConfig);
+
+            // Math Difficulty Chart
+            const difficultyCtx = document.getElementById('mathDifficultyChart').getContext('2d');
+            const difficulties = {{ difficulties|tojson|safe }};
+            const mathDifficultyStats = {{ math_difficulty_stats|tojson|safe }};
+
+            const difficultyData = {
+                labels: difficulties,
+                datasets: [
+                    {
+                        label: 'Loke Correct',
+                        data: difficulties.map(diff => mathDifficultyStats.loke[diff]?.correct || 0),
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Loke Incorrect',
+                        data: difficulties.map(diff => mathDifficultyStats.loke[diff]?.incorrect || 0),
+                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Adarsh Correct',
+                        data: difficulties.map(diff => mathDifficultyStats.adarsh[diff]?.correct || 0),
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Adarsh Incorrect',
+                        data: difficulties.map(diff => mathDifficultyStats.adarsh[diff]?.incorrect || 0),
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            };
+
+            const difficultyConfig = {
+                type: 'bar',
+                data: difficultyData,
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Difficulty'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    }
+                }
+            };
+
+            new Chart(difficultyCtx, difficultyConfig);
 
             const addLoadingEffect = (id) => {
                 document.getElementById(id).addEventListener('click', function (event) {
@@ -126,6 +268,7 @@
             };
 
             addLoadingEffect('quiz-link');
+            addLoadingEffect('math-quiz-link');
             addLoadingEffect('summary-link');
             addLoadingEffect('logout-link');
 
@@ -149,5 +292,60 @@
             });
         })();
     </script>
+
+    <style>
+        .charts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 1rem;
+        }
+
+        .chart-section {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-section h2 {
+            margin-bottom: 1rem;
+            color: #333;
+            text-align: center;
+        }
+
+        .header {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .quiz-link, .summary-link, .logout-link {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-link {
+            background-color: #4CAF50;
+        }
+
+        .summary-link {
+            background-color: #2196F3;
+        }
+
+        .logout-link {
+            background-color: #f44336;
+        }
+
+        .quiz-link:hover, .summary-link:hover, .logout-link:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+    </style>
 </body>
 </html>
