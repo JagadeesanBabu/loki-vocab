@@ -264,3 +264,54 @@ class GoogleSheetsService:
         except Exception as e:
             logger.error(f"Error loading math problems from Google Sheets: {e}")
             return []
+
+    def batch_update_words(self, updates):
+        """Batch update multiple words at once"""
+        try:
+            # Get the Vocabulary worksheet
+            worksheet = self._get_worksheet('Vocabulary')
+            
+            # Get all existing words
+            word_col = worksheet.col_values(1)
+            word_to_row = {word.lower(): idx + 1 for idx, word in enumerate(word_col)}
+            
+            # Prepare batch updates
+            batch_updates = []
+            new_rows = []
+            
+            for update in updates:
+                word = update['word'].lower()
+                definition = update['definition']
+                timestamp = update['timestamp']
+                
+                if word in word_to_row:
+                    # Update existing word
+                    row_idx = word_to_row[word]
+                    batch_updates.extend([
+                        (row_idx, 2, definition),  # Update definition
+                        (row_idx, 3, timestamp)    # Update timestamp
+                    ])
+                else:
+                    # Add new word
+                    new_rows.append([update['word'], definition, timestamp])
+            
+            # Execute batch updates for existing words
+            if batch_updates:
+                cells_to_update = []
+                for row, col, value in batch_updates:
+                    cells_to_update.append({
+                        'range': f'{chr(64+col)}{row}',
+                        'values': [[value]]
+                    })
+                worksheet.batch_update(cells_to_update)
+            
+            # Add new words in batch
+            if new_rows:
+                worksheet.append_rows(new_rows)
+            
+            logger.info(f"Batch updated {len(updates)} words in Google Sheets")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error in batch update: {e}")
+            return False

@@ -5,7 +5,7 @@ import re
 from flask import session
 from database.models import WordCount, WordData
 from services.auth_service import clear_session_files
-from services.openai_service import fetch_definition, fetch_incorrect_options, fetch_similar_words
+from services.optimization_service import OpenAIOptimizer, GoogleSheetsOptimizer, PersistentCache
 import logging
 logger = logging.getLogger(__name__)
 
@@ -16,53 +16,40 @@ def reset_score():
     session['score'] = {'correct': 0, 'incorrect': 0}
     session.modified = True
 
-def get_next_question(unlearned_words):
+async def get_next_question(unlearned_words):
     """Fetches the next question with options."""
-    from config import Config
-    from services.google_sheet_service import GoogleSheetsService
-    
     word = random.choice(unlearned_words)
-    # hardcoding the word for testing
-    # word = "defunct"
     
-    # Check if we have Google Sheets service info in the session
-    if 'sheet_service' not in session:
-        service_account_file_info = Config.GOOGLE_CREDENTIALS_JSON
-        spreadsheet_id = Config.SPREADSHEET_ID
-        session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
-    
-    # if the word is available in the DB, fetch the definition & incorrect options from the DB
-    if not WordData.word_exists(word):
-        correct_answer = fetch_definition(word)
-        incorrect_options = fetch_incorrect_options(word, correct_answer, num_options=3)
-        word_data = WordData(word=word, definition=correct_answer, incorrect_options=json.dumps(incorrect_options))
-        word_data.add_word_data()
-        
-        # Also save to Google Sheets
-        try:
-            service_info = session['sheet_service']
-            sheets_service = GoogleSheetsService(
-                service_info['service_account_info'], 
-                service_info['spreadsheet_id']
-            )
-            sheets_service.save_vocabulary_word(word, correct_answer)
-        except Exception as e:
-            logger.error(f"Error saving vocabulary word to Google Sheets: {e}")
-    else:
-        logger.info(f"Word '{word}' already exists in the database.")
+    # First check if word exists in our database
+    if WordData.word_exists(word):
+        logger.info(f"Word '{word}' found in database")
         correct_answer = WordData.get_correct_answer(word)
-        incorrect_options = json.loads(WordData.get_incorrect_options(word))  # Ensure incorrect_options is parsed as a list
+        incorrect_options = json.loads(WordData.get_incorrect_options(word))
         
-        # Still save to Google Sheets to ensure it's there
+        # Queue update to Google Sheets in background
+        GoogleSheetsOptimizer.queue_update(word, correct_answer)
+    else:
+        # Use optimized OpenAI service to fetch word data
         try:
-            service_info = session['sheet_service']
-            sheets_service = GoogleSheetsService(
-                service_info['service_account_info'], 
-                service_info['spreadsheet_id']
+            word_data = await OpenAIOptimizer.fetch_word_data(word)
+            
+            # Save to database
+            word_obj = WordData(
+                word=word,
+                definition=word_data['definition'],
+                incorrect_options=json.dumps(word_data['incorrect_options'])
             )
-            sheets_service.save_vocabulary_word(word, correct_answer)
+            word_obj.add_word_data()
+            
+            correct_answer = word_data['definition']
+            incorrect_options = word_data['incorrect_options']
+            
+            # Queue update to Google Sheets in background
+            GoogleSheetsOptimizer.queue_update(word, correct_answer)
+            
         except Exception as e:
-            logger.error(f"Error saving vocabulary word to Google Sheets: {e}")
+            logger.error(f"Error fetching word data: {e}")
+            return None
 
     options = incorrect_options + [correct_answer]
     random.shuffle(options)
@@ -75,50 +62,23 @@ def get_next_question(unlearned_words):
 
 def normalize_text(text):
     """Removes special characters, extra spaces, and normalizes case."""
-    return  re.sub(r'\s+', ' ', text.strip().lower())
+    return re.sub(r'\s+', ' ', text.strip().lower())
 
 def text_similarity(a, b):
     """Returns a similarity ratio between two strings."""
     return SequenceMatcher(None, a, b).ratio()
 
-def check_answer(user_answer, word, correct_answer, threshold=0.9):
+async def check_answer(user_answer, word, correct_answer, threshold=0.9):
     """Checks the user's answer and updates the score."""
-    from config import Config
-    from services.google_sheet_service import GoogleSheetsService
-    
-    # trim and convert to lowercase for case-insensitive comparison
-    user_answer = user_answer.strip().lower()
-    correct_answer = correct_answer.strip().lower()
+    # Normalize answers
+    user_answer = normalize_text(user_answer)
+    correct_answer = normalize_text(correct_answer)
 
-    # Normalize the user's answer and the correct answer
-    user_answer_normalized = normalize_text(user_answer)
-    correct_answer_normalized = normalize_text(correct_answer)
-
-    # Check if the user's answer is similar to the correct answer
-    similarity_ratio = text_similarity(user_answer_normalized, correct_answer_normalized)
+    # Check similarity
+    similarity_ratio = text_similarity(user_answer, correct_answer)
     logger.info(f"Similarity ratio: {similarity_ratio} and threshold: {threshold}")
-    logger.info(f"User answer: {user_answer_normalized} \nCorr answer: {correct_answer_normalized}")
     
-    # Save the word to Google Sheets regardless of answer correctness
-    try:
-        # Check if we have Google Sheets service info in the session
-        if 'sheet_service' not in session:
-            service_account_file_info = Config.GOOGLE_CREDENTIALS_JSON
-            spreadsheet_id = Config.SPREADSHEET_ID
-            session['sheet_service'] = {'service_account_info': service_account_file_info, 'spreadsheet_id': spreadsheet_id}
-        
-        # Save word to Google Sheets
-        service_info = session['sheet_service']
-        sheets_service = GoogleSheetsService(
-            service_info['service_account_info'], 
-            service_info['spreadsheet_id']
-        )
-        sheets_service.save_vocabulary_word(word, correct_answer)
-        logger.info(f"Saved word '{word}' to Google Sheets after answer check")
-    except Exception as e:
-        logger.error(f"Error saving vocabulary word to Google Sheets: {e}")
-    
-    # Check if the user's answer is close to the correct answer
+    # Determine if answer is correct
     is_correct = similarity_ratio >= threshold
 
     similar_words = []
@@ -128,14 +88,20 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
         answer_status = "correct"
         # Increment word count
         WordCount.increment_word_count(word)
-        # Fetch similar words
-        similar_words = fetch_similar_words(word, num_words=4)
+        
+        # Fetch similar words using optimized service
+        try:
+            word_data = await OpenAIOptimizer.fetch_word_data(word)
+            similar_words = word_data.get('similar_words', [])
+        except Exception as e:
+            logger.error(f"Error fetching similar words: {e}")
+            similar_words = []
     else:
         session['score']['incorrect'] += 1
         result_message = f"Incorrect. The correct meaning of '{word}' is '{correct_answer}'."
         answer_status = "incorrect"
         WordCount.increment_incorrect_count(word)
-        # Store the incorrect answer details to summarize in the summary page.
+        
         if 'incorrect_answers' not in session:
             session['incorrect_answers'] = []
         session['incorrect_answers'].append({
@@ -143,6 +109,9 @@ def check_answer(user_answer, word, correct_answer, threshold=0.9):
             'user_answer': user_answer,
             'correct_answer': correct_answer
         })
+
+    # Ensure session is saved
+    session.modified = True
 
     return {
         'result_message': result_message,

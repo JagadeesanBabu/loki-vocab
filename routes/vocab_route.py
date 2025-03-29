@@ -1,11 +1,13 @@
 import datetime
-from flask import Blueprint, render_template, session, redirect, url_for, request
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
 from database.models import WordData, WordCount
 from services.vocab_service import reset_score, get_next_question, check_answer, get_summary
 from services.google_sheet_service import GoogleSheetsService
 from config import Config
 import logging
+import asyncio
+
 logger = logging.getLogger(__name__)
 
 vocab_game_blueprint = Blueprint('vocab_game_blueprint', __name__)
@@ -18,7 +20,7 @@ def reset_score_route():
 
 @vocab_game_blueprint.route('/', methods=['GET', 'POST'])
 @login_required
-def vocab_game():
+async def vocab_game():
     """Handles the vocabulary game logic."""
     if 'score' not in session:
         session['score'] = {'correct': 0, 'incorrect': 0}
@@ -41,7 +43,7 @@ def vocab_game():
         user_answer = request.form['answer'].strip()
 
         # Check the user's answer
-        result_data = check_answer(user_answer, word, correct_answer)
+        result_data = await check_answer(user_answer, word, correct_answer)
         session['score'] = result_data['updated_score']
 
         # Mark the session as modified to save changes
@@ -103,7 +105,7 @@ def vocab_game():
             )
 
         # Generate the next question
-        question_data = get_next_question(unlearned_words)
+        question_data = await get_next_question(unlearned_words)
         session['word'] = question_data['word']
         session['correct_answer'] = question_data['correct_answer']
         session['options'] = question_data['options']
@@ -122,15 +124,21 @@ def vocab_game():
 
 @vocab_game_blueprint.route('/get_similar_words', methods=['POST'])
 @login_required
-def get_similar_words():
-    from flask import jsonify
-    from services.openai_service import fetch_similar_words
+async def get_similar_words():
+    """Endpoint to fetch similar words."""
+    from services.optimization_service import OpenAIOptimizer
+    
     word = request.form.get('word')
     if not word:
         return jsonify({'error': 'No word provided'}), 400
     
-    similar_words = fetch_similar_words(word, num_words=4)
-    return jsonify({'similar_words': similar_words})
+    try:
+        word_data = await OpenAIOptimizer.fetch_word_data(word)
+        similar_words = word_data.get('similar_words', [])
+        return jsonify({'similar_words': similar_words})
+    except Exception as e:
+        logger.error(f"Error fetching similar words: {e}")
+        return jsonify({'error': 'Failed to fetch similar words'}), 500
 
 @vocab_game_blueprint.route('/summary', methods=['GET'])
 @login_required
