@@ -1,4 +1,3 @@
-
 from sqlalchemy import func
 from .db import db
 from flask_login import UserMixin, current_user
@@ -209,3 +208,136 @@ class WordData(db.Model):
 
         logger.info(f"unlearned word count: {len(unlearned_words)}")
         return unlearned_words
+
+class MathProblemCount(db.Model):
+    __tablename__ = 'math_problem_counts'
+    id = db.Column(db.String(150), primary_key=True)  # problem_id
+    category = db.Column(db.String(50), nullable=False)
+    topic = db.Column(db.String(50), nullable=False)
+    difficulty = db.Column(db.String(20), nullable=False)
+    count = db.Column(db.Integer, nullable=False, default=0)  # correct attempts
+    incorrect_count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    updated_by = db.Column(db.String(150), nullable=True)
+
+    __table_args__ = (
+        db.PrimaryKeyConstraint('id', 'updated_by'),
+    )
+
+    @classmethod
+    def get_unique_dates(cls, start_date, end_date) -> list:
+        unique_dates = db.session.query(func.date(cls.updated_at)).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date
+        ).distinct().all()
+        return [date[0] for date in unique_dates]
+
+    @classmethod
+    def get_unique_users(cls, start_date, end_date) -> list:
+        unique_users = db.session.query(cls.updated_by).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date
+        ).distinct().all()
+        return [user[0] for user in unique_users]
+
+    @classmethod
+    def get_todays_user_problem_count(cls):
+        day_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        return cls.query.filter(cls.updated_at >= day_start, cls.updated_by == current_user.username).count()
+
+    @classmethod
+    def increment_correct_count(cls, problem_id, category, topic, difficulty):
+        problem_count = cls.query.filter_by(id=problem_id, updated_by=current_user.username).first()
+        if problem_count:
+            problem_count.count += 1
+            problem_count.updated_at = db.func.now()
+        else:
+            problem_count = cls(
+                id=problem_id,
+                category=category,
+                topic=topic,
+                difficulty=difficulty,
+                count=1,
+                updated_by=current_user.username,
+                updated_at=db.func.now()
+            )
+            db.session.add(problem_count)
+        db.session.commit()
+
+    @classmethod
+    def increment_incorrect_count(cls, problem_id, category, topic, difficulty):
+        problem_count = cls.query.filter_by(id=problem_id, updated_by=current_user.username).first()
+        if problem_count:
+            problem_count.incorrect_count += 1
+            problem_count.updated_at = db.func.now()
+        else:
+            problem_count = cls(
+                id=problem_id,
+                category=category,
+                topic=topic,
+                difficulty=difficulty,
+                incorrect_count=1,
+                updated_by=current_user.username,
+                updated_at=db.func.now()
+            )
+            db.session.add(problem_count)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to update incorrect count: {e}")
+
+    @classmethod
+    def get_daily_correct_counts_by_user(cls, start_date, end_date) -> dict:
+        daily_correct_count_by_user_row = db.session.query(
+            func.date(cls.updated_at).label('date'),
+            func.count(cls.count).label('total_count'),
+            cls.updated_by.label('updated_by')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date,
+            cls.count > 0
+        ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
+        daily_correct_count_by_user = {(row.date, row.updated_by): row.total_count for row in daily_correct_count_by_user_row}
+        return daily_correct_count_by_user
+
+    @classmethod
+    def get_daily_incorrect_counts_by_user(cls, start_date, end_date) -> dict:
+        daily_incorrect_count_by_user = db.session.query(
+            func.date(cls.updated_at).label('date'),
+            cls.updated_by.label('updated_by'),
+            func.count(cls.incorrect_count).label('total_incorrect_count')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date,
+            cls.incorrect_count > 0
+        ).group_by(func.date(cls.updated_at)).group_by(cls.updated_by).order_by(func.date(cls.updated_at)).all()
+        daily_incorrect_count_by_user = {(row.date, row.updated_by): row.total_incorrect_count for row in daily_incorrect_count_by_user}
+        return daily_incorrect_count_by_user
+
+    @classmethod
+    def get_stats_by_category(cls, user, start_date, end_date):
+        """Get statistics grouped by category for a specific user."""
+        return db.session.query(
+            cls.category,
+            func.sum(cls.count).label('correct_count'),
+            func.sum(cls.incorrect_count).label('incorrect_count')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date,
+            cls.updated_by == user
+        ).group_by(cls.category).all()
+
+    @classmethod
+    def get_stats_by_difficulty(cls, user, start_date, end_date):
+        """Get statistics grouped by difficulty for a specific user."""
+        return db.session.query(
+            cls.difficulty,
+            func.sum(cls.count).label('correct_count'),
+            func.sum(cls.incorrect_count).label('incorrect_count')
+        ).filter(
+            cls.updated_at >= start_date,
+            cls.updated_at <= end_date,
+            cls.updated_by == user
+        ).group_by(cls.difficulty).all()

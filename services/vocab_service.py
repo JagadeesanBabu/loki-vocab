@@ -32,6 +32,14 @@ async def get_next_question(unlearned_words):
         # Use optimized OpenAI service to fetch word data
         try:
             word_data = await OpenAIOptimizer.fetch_word_data(word)
+            if not word_data:
+                logger.error(f"Failed to fetch word data for '{word}'")
+                # Try another word
+                remaining_words = [w for w in unlearned_words if w != word]
+                if not remaining_words:
+                    logger.error("No more words available")
+                    return None
+                return await get_next_question(remaining_words)
             
             # Save to database
             word_obj = WordData(
@@ -49,7 +57,12 @@ async def get_next_question(unlearned_words):
             
         except Exception as e:
             logger.error(f"Error fetching word data: {e}")
-            return None
+            # Try another word
+            remaining_words = [w for w in unlearned_words if w != word]
+            if not remaining_words:
+                logger.error("No more words available")
+                return None
+            return await get_next_question(remaining_words)
 
     options = incorrect_options + [correct_answer]
     random.shuffle(options)

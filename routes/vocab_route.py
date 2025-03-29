@@ -81,7 +81,6 @@ async def vocab_game():
         session['all_words'] = all_words
         
         # Exclude words that have been presented more than 10 times
-
         unlearned_words = WordData.get_unlearned_words(all_words, max_count=1)
         logger.info(f"Found {len(unlearned_words)} unlearned words")
         
@@ -106,6 +105,19 @@ async def vocab_game():
 
         # Generate the next question
         question_data = await get_next_question(unlearned_words)
+        if not question_data:
+            logger.error("Failed to generate question data")
+            return render_template(
+                'vocab_game.html',
+                word='',
+                options=[],
+                result='Sorry, we encountered an error generating the next question. Please try again.',
+                answer_status='error',
+                score=session['score'],
+                show_next_question=False,
+                similar_words=[]
+            )
+
         session['word'] = question_data['word']
         session['correct_answer'] = question_data['correct_answer']
         session['options'] = question_data['options']

@@ -83,6 +83,13 @@ async def get_next_math_problem():
     try:
         # Use optimized OpenAI service to generate problem
         problem = await OpenAIOptimizer.generate_math_problem(category, topic, difficulty)
+        if not problem:
+            logger.error("Failed to generate math problem")
+            return None
+            
+        # Add unique ID if not present
+        if 'id' not in problem:
+            problem['id'] = f"{category}_{topic}_{difficulty}_{random.randint(1000, 9999)}"
         
         # Queue update to Google Sheets in background
         MathSheetsOptimizer.queue_update(problem)
