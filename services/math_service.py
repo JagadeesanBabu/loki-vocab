@@ -4,6 +4,9 @@ from flask import session
 from services.auth_service import clear_session_files
 from services.optimization_service import OpenAIOptimizer, MathSheetsOptimizer
 import logging
+from flask_login import current_user
+from datetime import datetime
+
 logger = logging.getLogger(__name__)
 
 # GL school level categories and topics
@@ -110,24 +113,41 @@ async def check_math_answer(user_answer, problem):
         }
     
     correct_answer = problem['correct_answer']
+    is_visual = problem.get('is_visual', False)
     
     # Compare answers, with flexibility for numeric values
     is_correct = False
     
-    # Convert both to same type if possible
-    try:
-        if isinstance(correct_answer, (int, float)):
-            user_answer = float(user_answer)
-            is_correct = abs(user_answer - float(correct_answer)) < 0.001
-        else:
+    if is_visual:
+        # For visual puzzles, do a more flexible string comparison
+        user_answer = str(user_answer).lower().strip()
+        correct_answer = str(correct_answer).lower().strip()
+        # Split into words and check if key elements are present
+        user_words = set(user_answer.split())
+        correct_words = set(correct_answer.split())
+        # Calculate similarity score
+        common_words = user_words.intersection(correct_words)
+        similarity_score = len(common_words) / max(len(user_words), len(correct_words))
+        is_correct = similarity_score > 0.7  # Consider correct if 70% similar
+    else:
+        # For regular math problems, use numeric comparison
+        try:
+            if isinstance(correct_answer, (int, float)):
+                user_answer = float(user_answer)
+                is_correct = abs(user_answer - float(correct_answer)) < 0.001
+            else:
+                is_correct = str(user_answer).lower().strip() == str(correct_answer).lower().strip()
+        except ValueError:
+            # If conversion fails, do string comparison
             is_correct = str(user_answer).lower().strip() == str(correct_answer).lower().strip()
-    except ValueError:
-        # If conversion fails, do string comparison
-        is_correct = str(user_answer).lower().strip() == str(correct_answer).lower().strip()
     
     # Get or generate explanation
     explanation = problem.get('explanation', '')
-    if not explanation and not is_correct:
+    if is_visual:
+        pattern_explanation = problem.get('pattern_explanation', '')
+        if pattern_explanation:
+            explanation = f"{explanation}\n\nPattern: {pattern_explanation}"
+    elif not explanation and not is_correct:
         try:
             explanation = await OpenAIOptimizer.generate_problem_explanation(
                 problem['question'],
@@ -137,31 +157,51 @@ async def check_math_answer(user_answer, problem):
             logger.error(f"Error generating problem explanation: {e}")
             explanation = "Explanation not available at the moment."
     
-    # Update score
+    # Initialize or update score in session
     if 'math_score' not in session:
         session['math_score'] = {'correct': 0, 'incorrect': 0}
     
     if is_correct:
         session['math_score']['correct'] += 1
-        result_message = f"Correct! The answer is {correct_answer}."
+        result_message = "Correct! " + (f"The pattern continues with {correct_answer}." if is_visual else f"The answer is {correct_answer}.")
         answer_status = "correct"
     else:
         session['math_score']['incorrect'] += 1
-        result_message = f"Incorrect. The correct answer is {correct_answer}."
+        result_message = "Incorrect. " + (f"The pattern continues with {correct_answer}." if is_visual else f"The correct answer is {correct_answer}.")
         answer_status = "incorrect"
         
         # Store incorrect answer for summary
         if 'incorrect_math_answers' not in session:
             session['incorrect_math_answers'] = []
-        session['incorrect_math_answers'].append({
+        incorrect_answer = {
             'question': problem['question'],
             'user_answer': user_answer,
             'correct_answer': correct_answer,
-            'explanation': explanation
-        })
+            'explanation': explanation,
+            'is_visual': is_visual
+        }
+        if is_visual and 'figures' in problem:
+            incorrect_answer['figures'] = problem['figures']
+        session['incorrect_math_answers'].append(incorrect_answer)
     
-    # Ensure session is saved
+    # Ensure session is marked as modified
     session.modified = True
+    
+    # Queue stats update to Google Sheets
+    stats_data = {
+        'user': current_user.username if current_user and current_user.is_authenticated else 'anonymous',
+        'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'category': problem.get('category', ''),
+        'difficulty': problem.get('difficulty', ''),
+        'correct': 1 if is_correct else 0,
+        'incorrect': 0 if is_correct else 1,
+        'total_time': session.get('last_answer_time', 0),
+        'avg_time': session.get('last_answer_time', 0),  # For now, just use the last time
+        'is_visual': is_visual
+    }
+    
+    # Force immediate update to Google Sheets
+    MathSheetsOptimizer.queue_stats_update(stats_data)
     
     return {
         'result_message': result_message,

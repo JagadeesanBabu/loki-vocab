@@ -24,6 +24,8 @@ async def vocab_game():
     """Handles the vocabulary game logic."""
     if 'score' not in session:
         session['score'] = {'correct': 0, 'incorrect': 0}
+        session.modified = True
+
     # Check if the user has attempted 50 questions from the DB and redirect to dashboard saying you have reached the limit
     todays_user_word_count = WordCount.get_todays_user_word_count()
     logger.info(f"Today's user word count: {str(todays_user_word_count)}")
@@ -45,8 +47,6 @@ async def vocab_game():
         # Check the user's answer
         result_data = await check_answer(user_answer, word, correct_answer)
         session['score'] = result_data['updated_score']
-
-        # Mark the session as modified to save changes
         session.modified = True
 
         # Render the response for the current answer
@@ -79,6 +79,7 @@ async def vocab_game():
             logger.info(f"Sample words: {sample}")
             
         session['all_words'] = all_words
+        session.modified = True
         
         # Exclude words that have been presented more than 10 times
         unlearned_words = WordData.get_unlearned_words(all_words, max_count=1)
@@ -105,32 +106,36 @@ async def vocab_game():
 
         # Generate the next question
         question_data = await get_next_question(unlearned_words)
+        
         if not question_data:
             logger.error("Failed to generate question data")
             return render_template(
                 'vocab_game.html',
                 word='',
                 options=[],
-                result='Sorry, we encountered an error generating the next question. Please try again.',
+                result='Error: Could not generate a question. Please try again.',
                 answer_status='error',
                 score=session['score'],
                 show_next_question=False,
                 similar_words=[]
             )
-
+        
+        # Store question data in session
         session['word'] = question_data['word']
         session['correct_answer'] = question_data['correct_answer']
         session['options'] = question_data['options']
-
-        # Render the question page
+        session.modified = True
+        
+        # Render the template with the new question
         return render_template(
             'vocab_game.html',
             word=question_data['word'],
             options=question_data['options'],
-            result="",
-            answer_status="",
+            result='',
+            correct_answer='',
+            answer_status='',
             score=session['score'],
-            show_next_question=False,
+            show_next_question=True,
             similar_words=[]
         )
 

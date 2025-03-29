@@ -71,14 +71,27 @@ class OpenAIOptimizer:
             response = await async_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that provides word definitions and similar words."},
-                    {"role": "user", "content": f"""Please provide information about the word '{word}' in the following JSON format:
+                    {"role": "system", "content": "You are a vocabulary teacher providing concise definitions and related words."},
+                    {"role": "user", "content": f"""Define the word '{word}' and provide incorrect options and similar words. Format as JSON:
 {{
-    "definition": "clear and concise definition",
-    "incorrect_options": ["three", "incorrect", "definitions"],
-    "similar_words": ["three", "similar", "words"]
+    "definition": "A clear, single-sentence definition without elaboration",
+    "incorrect_options": ["short incorrect definition 1", "short incorrect definition 2", "short incorrect definition 3"],
+    "similar_words": [
+        {{
+            "word": "similar_word1",
+            "definition": "brief definition of similar word 1"
+        }},
+        {{
+            "word": "similar_word2",
+            "definition": "brief definition of similar word 2"
+        }},
+        {{
+            "word": "similar_word3",
+            "definition": "brief definition of similar word 3"
+        }}
+    ]
 }}
-Make sure all fields are present and properly formatted."""}
+Keep all definitions under 15 words. Make incorrect options plausible but clearly wrong."""}
                 ]
             )
             
@@ -97,6 +110,17 @@ Make sure all fields are present and properly formatted."""}
                 if len(word_data['incorrect_options']) != 3 or len(word_data['similar_words']) != 3:
                     logger.error(f"Invalid response format for word '{word}': wrong number of options/similar words")
                     return cls._get_fallback_word_data(word)
+                
+                # Ensure definitions are concise
+                if len(word_data['definition'].split()) > 15:
+                    word_data['definition'] = ' '.join(word_data['definition'].split()[:15]) + '.'
+                for i, opt in enumerate(word_data['incorrect_options']):
+                    if len(opt.split()) > 15:
+                        word_data['incorrect_options'][i] = ' '.join(opt.split()[:15]) + '.'
+                for word_obj in word_data['similar_words']:
+                    if len(word_obj['definition'].split()) > 15:
+                        word_obj['definition'] = ' '.join(word_obj['definition'].split()[:15]) + '.'
+                
             except json.JSONDecodeError:
                 logger.error(f"Failed to parse JSON response for word '{word}'")
                 return cls._get_fallback_word_data(word)
@@ -131,9 +155,18 @@ Make sure all fields are present and properly formatted."""}
                 f"Alternative meaning 3 for {word}"
             ],
             'similar_words': [
-                f"similar1_{word}",
-                f"similar2_{word}",
-                f"similar3_{word}"
+                {
+                    'word': f"similar1_{word}",
+                    'definition': "Definition temporarily unavailable"
+                },
+                {
+                    'word': f"similar2_{word}",
+                    'definition': "Definition temporarily unavailable"
+                },
+                {
+                    'word': f"similar3_{word}",
+                    'definition': "Definition temporarily unavailable"
+                }
             ]
         }
 
@@ -147,6 +180,10 @@ Make sure all fields are present and properly formatted."""}
             return cached_data
 
         try:
+            # Special handling for visual puzzles
+            if topic == 'Visual puzzles':
+                return await cls._generate_visual_puzzle(category, difficulty)
+
             response = await async_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -159,7 +196,8 @@ Make sure all fields are present and properly formatted."""}
     "category": "{category}",
     "topic": "{topic}",
     "difficulty": "{difficulty}",
-    "explanation": "step_by_step_solution"
+    "explanation": "step_by_step_solution",
+    "is_visual": false
 }}
 Make sure the correct_answer is a number when appropriate, and ensure all fields are present."""}
                 ]
@@ -170,7 +208,7 @@ Make sure the correct_answer is a number when appropriate, and ensure all fields
             try:
                 problem_data = json.loads(content)
                 # Validate the response format
-                required_keys = ['id', 'question', 'correct_answer', 'category', 'topic', 'difficulty', 'explanation']
+                required_keys = ['id', 'question', 'correct_answer', 'category', 'topic', 'difficulty', 'explanation', 'is_visual']
                 if not all(key in problem_data for key in required_keys):
                     logger.error(f"Invalid response format for math problem: missing required keys")
                     return cls._get_fallback_math_problem(category, topic, difficulty)
@@ -198,6 +236,114 @@ Make sure the correct_answer is a number when appropriate, and ensure all fields
         except Exception as e:
             logger.error(f"Error generating math problem: {e}")
             return cls._get_fallback_math_problem(category, topic, difficulty)
+
+    @classmethod
+    async def _generate_visual_puzzle(cls, category: str, difficulty: str) -> Dict:
+        """Generate a visual puzzle problem."""
+        try:
+            response = await async_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a math teacher creating visual puzzles."},
+                    {"role": "user", "content": f"""Create a {difficulty} visual puzzle problem. Format the response as JSON with the following structure:
+{{
+    "id": "unique_string",
+    "question": "detailed_problem_text",
+    "figures": [
+        {{
+            "description": "Detailed description of figure 1 that can be used to generate an image",
+            "caption": "Figure 1"
+        }},
+        {{
+            "description": "Detailed description of figure 2 that can be used to generate an image",
+            "caption": "Figure 2"
+        }},
+        {{
+            "description": "Detailed description of figure 3 that can be used to generate an image",
+            "caption": "Figure 3"
+        }}
+    ],
+    "correct_answer": "description_of_next_figure",
+    "category": "{category}",
+    "topic": "Visual puzzles",
+    "difficulty": "{difficulty}",
+    "explanation": "step_by_step_solution",
+    "is_visual": true,
+    "pattern_explanation": "explanation of how the pattern evolves"
+}}
+Make sure to create a clear visual pattern that can be understood from the descriptions."""}
+                ]
+            )
+
+            content = response.choices[0].message.content
+            try:
+                problem_data = json.loads(content)
+                # Validate the response format
+                required_keys = ['id', 'question', 'figures', 'correct_answer', 'category', 'topic', 'difficulty', 'explanation', 'is_visual', 'pattern_explanation']
+                if not all(key in problem_data for key in required_keys):
+                    logger.error("Invalid response format for visual puzzle")
+                    return cls._get_fallback_visual_puzzle(category, difficulty)
+
+                # Generate images for each figure using DALL-E
+                figures_with_images = []
+                for figure in problem_data['figures']:
+                    try:
+                        image_response = await async_client.images.generate(
+                            model="dall-e-3",
+                            prompt=f"Create a clear, simple diagram for a visual puzzle: {figure['description']}. The image should be clean, minimal, and suitable for a math puzzle.",
+                            size="1024x1024",
+                            quality="standard",
+                            n=1,
+                        )
+                        figure['image_url'] = image_response.data[0].url
+                        figures_with_images.append(figure)
+                    except Exception as e:
+                        logger.error(f"Error generating image for figure: {e}")
+                        figure['image_url'] = None
+                        figures_with_images.append(figure)
+
+                problem_data['figures'] = figures_with_images
+                return problem_data
+
+            except json.JSONDecodeError:
+                logger.error("Failed to parse JSON response for visual puzzle")
+                return cls._get_fallback_visual_puzzle(category, difficulty)
+
+        except Exception as e:
+            logger.error(f"Error generating visual puzzle: {e}")
+            return cls._get_fallback_visual_puzzle(category, difficulty)
+
+    @classmethod
+    def _get_fallback_visual_puzzle(cls, category: str, difficulty: str) -> Dict:
+        """Provide fallback visual puzzle when API fails."""
+        return {
+            'id': f"fallback_visual_{category}_{difficulty}",
+            'question': "What comes next in this pattern?",
+            'figures': [
+                {
+                    'description': "A simple square",
+                    'caption': "Figure 1",
+                    'image_url': None
+                },
+                {
+                    'description': "A square with a circle inside",
+                    'caption': "Figure 2",
+                    'image_url': None
+                },
+                {
+                    'description': "A square with a circle and triangle inside",
+                    'caption': "Figure 3",
+                    'image_url': None
+                }
+            ],
+            'correct_answer': "A square with a circle, triangle, and star inside",
+            'category': category,
+            'topic': "Visual puzzles",
+            'difficulty': difficulty,
+            'explanation': "Each figure adds one shape inside the square",
+            'is_visual': True,
+            'pattern_explanation': "In each step, a new basic shape is added inside the square"
+        }
 
     @classmethod
     def _get_fallback_math_problem(cls, category: str, topic: str, difficulty: str) -> Dict:
@@ -253,7 +399,12 @@ class GoogleSheetsOptimizer:
     @classmethod
     def queue_update(cls, word: str, definition: str):
         """Queue an update for batch processing."""
-        cls._updates_queue.append((word, definition))
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cls._updates_queue.append({
+            'word': word,
+            'definition': definition,
+            'timestamp': timestamp
+        })
         
         if len(cls._updates_queue) >= cls._batch_size or \
            time.time() - cls._last_flush > cls._flush_interval:
@@ -266,9 +417,8 @@ class GoogleSheetsOptimizer:
             return
 
         try:
-            # Convert queue to format expected by batch update
-            updates = [(item[0], item[1]) for item in cls._updates_queue]
-            cls._service.batch_update_words(updates)
+            # Process updates in batch
+            cls._service.batch_update_words(cls._updates_queue)
             cls._updates_queue = []
             cls._last_flush = time.time()
         except Exception as e:
@@ -278,6 +428,7 @@ class MathSheetsOptimizer:
     """Optimizes math problem updates to Google Sheets."""
     _service = GoogleSheetsService(Config.GOOGLE_CREDENTIALS_JSON, Config.SPREADSHEET_ID)
     _updates_queue = []
+    _stats_queue = []
     _batch_size = 10
     _flush_interval = 300
     _last_flush = time.time()
@@ -292,15 +443,45 @@ class MathSheetsOptimizer:
             cls.flush_updates()
 
     @classmethod
+    def queue_stats_update(cls, stats_data: Dict):
+        """Queue a math statistics update for batch processing."""
+        cls._stats_queue.append(stats_data)
+        
+        # Force flush after each stats update to ensure timely updates
+        cls.flush_updates()
+
+    @classmethod
     def flush_updates(cls):
         """Process all queued updates."""
-        if not cls._updates_queue:
+        if not cls._updates_queue and not cls._stats_queue:
             return
 
         try:
-            # Process queued updates in batch
-            cls._service.batch_update_math_problems(cls._updates_queue)
-            cls._updates_queue = []
+            # Process queued problem updates in batch
+            if cls._updates_queue:
+                for problem in cls._updates_queue:
+                    cls._service.save_math_problem(problem)
+                cls._updates_queue = []
+
+            # Process queued stats updates in batch
+            if cls._stats_queue:
+                cls._service.batch_update_math_stats(cls._stats_queue)
+                cls._stats_queue = []
+
             cls._last_flush = time.time()
         except Exception as e:
-            logger.error(f"Error flushing math updates to Google Sheets: {e}") 
+            logger.error(f"Error flushing updates to Google Sheets: {e}")
+
+    @classmethod
+    def get_math_stats(cls, user: str, start_date: datetime, end_date: datetime) -> Dict:
+        """Get math statistics for a user within a date range."""
+        try:
+            return cls._service.get_math_stats(user, start_date, end_date)
+        except Exception as e:
+            logger.error(f"Error getting math stats from Google Sheets: {e}")
+            return {
+                'by_category': {},
+                'by_difficulty': {},
+                'daily_correct': [],
+                'daily_incorrect': []
+            } 

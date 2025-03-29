@@ -4,6 +4,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import func
 from database.models import WordCount, MathProblemCount
 from database.db import db
+from services.optimization_service import MathSheetsOptimizer
 import logging
 logger = logging.getLogger(__name__)
 
@@ -39,29 +40,34 @@ class DashboardService:
         Retrieve and process daily incorrect counts for a specific user within the date range.
         Combines both word and math problem incorrect counts.
         """
-        # Get actual incorrect counts from both tables
+        # Get word counts from database
         word_counts = WordCount.get_daily_incorrect_counts_by_user(start_date, end_date)
-        math_counts = MathProblemCount.get_daily_incorrect_counts_by_user(start_date, end_date)
-
-        logger.debug(f"Actual word incorrect counts: {word_counts}")
-        logger.debug(f"Actual math incorrect counts: {math_counts}")
+        
+        # Get math counts from Google Sheets
+        math_stats = MathSheetsOptimizer.get_math_stats(user, start_date, end_date)
+        
+        logger.debug(f"Word incorrect counts: {word_counts}")
+        logger.debug(f"Math incorrect counts: {math_stats['daily_incorrect']}")
 
         # Fill missing data with zeros
         result = []
         current_date = start_date
+        day_index = 0
         while current_date <= end_date:
-            date_str = current_date.strftime('%Y-%m-%d')
             date_key = current_date.date()
             
-            # Look up the actual counts using the date and user as a key
+            # Get word count for this day
             word_count = word_counts.get((date_key, user), 0)
-            math_count = math_counts.get((date_key, user), 0)
+            
+            # Get math count for this day
+            math_count = math_stats['daily_incorrect'][day_index] if day_index < len(math_stats['daily_incorrect']) else 0
             
             # Combine the counts
             total_count = word_count + math_count
             result.append(total_count)
             
             current_date += timedelta(days=1)
+            day_index += 1
         
         return result
 
@@ -71,74 +77,45 @@ class DashboardService:
         Retrieve and process daily correct counts for a specific user within the date range.
         Combines both word and math problem correct counts.
         """
-        # Get actual correct counts from both tables
+        # Get word counts from database
         word_counts = WordCount.get_daily_correct_counts_by_user(start_date, end_date)
-        math_counts = MathProblemCount.get_daily_correct_counts_by_user(start_date, end_date)
-
-        logger.debug(f"Actual word correct counts: {word_counts}")
-        logger.debug(f"Actual math correct counts: {math_counts}")
+        
+        # Get math counts from Google Sheets
+        math_stats = MathSheetsOptimizer.get_math_stats(user, start_date, end_date)
+        
+        logger.debug(f"Word correct counts: {word_counts}")
+        logger.debug(f"Math correct counts: {math_stats['daily_correct']}")
 
         # Fill missing data with zeros
         result = []
         current_date = start_date
+        day_index = 0
         while current_date <= end_date:
-            date_str = current_date.strftime('%Y-%m-%d')
             date_key = current_date.date()
             
-            # Look up the actual counts using the date and user as a key
+            # Get word count for this day
             word_count = word_counts.get((date_key, user), 0)
-            math_count = math_counts.get((date_key, user), 0)
+            
+            # Get math count for this day
+            math_count = math_stats['daily_correct'][day_index] if day_index < len(math_stats['daily_correct']) else 0
             
             # Combine the counts
             total_count = word_count + math_count
             result.append(total_count)
             
             current_date += timedelta(days=1)
+            day_index += 1
         
         return result
 
     @classmethod
     def get_math_stats_by_category(cls, user, start_date, end_date):
         """Get math statistics grouped by category for a specific user."""
-        stats = db.session.query(
-            MathProblemCount.category,
-            func.sum(MathProblemCount.count).label('correct_count'),
-            func.sum(MathProblemCount.incorrect_count).label('incorrect_count')
-        ).filter(
-            MathProblemCount.updated_by == user,
-            MathProblemCount.created_at >= start_date,
-            MathProblemCount.created_at < end_date
-        ).group_by(
-            MathProblemCount.category
-        ).all()
-
-        return {
-            stat.category: {
-                'correct': stat.correct_count or 0,
-                'incorrect': stat.incorrect_count or 0
-            }
-            for stat in stats
-        }
+        math_stats = MathSheetsOptimizer.get_math_stats(user, start_date, end_date)
+        return math_stats['by_category']
 
     @classmethod
     def get_math_stats_by_difficulty(cls, user, start_date, end_date):
         """Get math statistics grouped by difficulty for a specific user."""
-        stats = db.session.query(
-            MathProblemCount.difficulty,
-            func.sum(MathProblemCount.count).label('correct_count'),
-            func.sum(MathProblemCount.incorrect_count).label('incorrect_count')
-        ).filter(
-            MathProblemCount.updated_by == user,
-            MathProblemCount.created_at >= start_date,
-            MathProblemCount.created_at < end_date
-        ).group_by(
-            MathProblemCount.difficulty
-        ).all()
-
-        return {
-            stat.difficulty: {
-                'correct': stat.correct_count or 0,
-                'incorrect': stat.incorrect_count or 0
-            }
-            for stat in stats
-        }
+        math_stats = MathSheetsOptimizer.get_math_stats(user, start_date, end_date)
+        return math_stats['by_difficulty']

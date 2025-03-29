@@ -2,6 +2,7 @@ import json
 import gspread
 from google.oauth2.service_account import Credentials
 import logging
+from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 class GoogleSheetsService:
@@ -38,9 +39,14 @@ class GoogleSheetsService:
                 worksheet.update('A1:C1', [['Word', 'Definition', 'Last Updated']])
                 return worksheet
             elif sheet_name == 'MathProblems':
-                worksheet = spreadsheet.add_worksheet(title=sheet_name, rows=1000, cols=10)
+                worksheet = spreadsheet.add_worksheet(title=sheet_name, rows=1000, cols=12)
                 # Add headers for math problems
-                worksheet.update('A1:H1', [['ID', 'Question', 'Answer', 'Category', 'Topic', 'Difficulty', 'Explanation', 'Created']])
+                worksheet.update('A1:L1', [['ID', 'Question', 'Answer', 'Category', 'Topic', 'Difficulty', 'Explanation', 'Created', 'Is Visual', 'Figures', 'Pattern Explanation', 'Image URLs']])
+                return worksheet
+            elif sheet_name == 'MathStats':
+                worksheet = spreadsheet.add_worksheet(title=sheet_name, rows=1000, cols=9)
+                # Add headers for math statistics
+                worksheet.update('A1:I1', [['User', 'Date', 'Category', 'Difficulty', 'Correct', 'Incorrect', 'Total Time', 'Average Time', 'Is Visual']])
                 return worksheet
             else:
                 # Generic worksheet
@@ -176,6 +182,21 @@ class GoogleSheetsService:
             else:
                 answer = str(answer).strip()
             
+            # Handle visual puzzle data
+            is_visual = problem.get('is_visual', False)
+            figures_json = ''
+            pattern_explanation = ''
+            image_urls = ''
+            
+            if is_visual:
+                if 'figures' in problem:
+                    figures_json = json.dumps([{
+                        'description': f.get('description', ''),
+                        'caption': f.get('caption', '')
+                    } for f in problem['figures']])
+                    image_urls = json.dumps([f.get('image_url', '') for f in problem['figures']])
+                pattern_explanation = str(problem.get('pattern_explanation', '')).strip()
+            
             # Prepare the row data
             row_data = [
                 problem_id,
@@ -185,7 +206,11 @@ class GoogleSheetsService:
                 str(problem.get('topic', '')).strip(),
                 str(problem.get('difficulty', '')).strip(),
                 str(problem.get('explanation', '')).strip(),
-                timestamp
+                timestamp,
+                'true' if is_visual else 'false',
+                figures_json,
+                pattern_explanation,
+                image_urls
             ]
             
             # Check if problem with this ID already exists
@@ -315,3 +340,128 @@ class GoogleSheetsService:
         except Exception as e:
             logger.error(f"Error in batch update: {e}")
             return False
+
+    def batch_update_math_stats(self, stats_list):
+        """Update multiple math statistics entries in batch."""
+        try:
+            if not stats_list:
+                return True
+
+            # Get the MathStats worksheet
+            stats_worksheet = self._get_worksheet('MathStats')
+
+            # Prepare batch update data
+            rows = []
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            for stats in stats_list:
+                row = [
+                    str(stats.get('user', '')).strip(),
+                    str(stats.get('date', timestamp)).strip(),
+                    str(stats.get('category', '')).strip(),
+                    str(stats.get('difficulty', '')).strip(),
+                    str(stats.get('correct', 0)).strip(),
+                    str(stats.get('incorrect', 0)).strip(),
+                    str(stats.get('total_time', 0)).strip(),
+                    str(stats.get('avg_time', 0)).strip(),
+                    'true' if stats.get('is_visual', False) else 'false'
+                ]
+                rows.append(row)
+
+            # Append all rows at once
+            stats_worksheet.append_rows(rows)
+            logger.info(f"Saved {len(rows)} math statistics entries to Google Sheets")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error saving math statistics to Google Sheets: {e}")
+            return False
+
+    def get_math_stats(self, user, start_date, end_date):
+        """Get math statistics for a user within a date range."""
+        try:
+            # Get the MathStats worksheet
+            stats_worksheet = self._get_worksheet('MathStats')
+            
+            # Get all values
+            all_values = stats_worksheet.get_all_values()
+            
+            # Skip if only header row or empty
+            if len(all_values) <= 1:
+                return {
+                    'by_category': {},
+                    'by_difficulty': {},
+                    'daily_correct': [],
+                    'daily_incorrect': []
+                }
+            
+            # Process the data
+            headers = all_values[0]
+            by_category = {}
+            by_difficulty = {}
+            daily_stats = {}
+            
+            for row in all_values[1:]:
+                # Skip if row is too short
+                if len(row) < 6:
+                    continue
+                    
+                row_user = row[0]
+                row_date = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S").date()
+                row_category = row[2]
+                row_difficulty = row[3]
+                row_correct = int(row[4]) if row[4].isdigit() else 0
+                row_incorrect = int(row[5]) if row[5].isdigit() else 0
+                
+                # Skip if not matching user or date range
+                if row_user != user or not (start_date.date() <= row_date <= end_date.date()):
+                    continue
+                
+                # Update category stats
+                if row_category not in by_category:
+                    by_category[row_category] = {'correct': 0, 'incorrect': 0}
+                by_category[row_category]['correct'] += row_correct
+                by_category[row_category]['incorrect'] += row_incorrect
+                
+                # Update difficulty stats
+                if row_difficulty not in by_difficulty:
+                    by_difficulty[row_difficulty] = {'correct': 0, 'incorrect': 0}
+                by_difficulty[row_difficulty]['correct'] += row_correct
+                by_difficulty[row_difficulty]['incorrect'] += row_incorrect
+                
+                # Update daily stats
+                date_str = row_date.strftime("%Y-%m-%d")
+                if date_str not in daily_stats:
+                    daily_stats[date_str] = {'correct': 0, 'incorrect': 0}
+                daily_stats[date_str]['correct'] += row_correct
+                daily_stats[date_str]['incorrect'] += row_incorrect
+            
+            # Convert daily stats to lists
+            dates = []
+            daily_correct = []
+            daily_incorrect = []
+            
+            current_date = start_date
+            while current_date <= end_date:
+                date_str = current_date.strftime("%Y-%m-%d")
+                dates.append(date_str)
+                stats = daily_stats.get(date_str, {'correct': 0, 'incorrect': 0})
+                daily_correct.append(stats['correct'])
+                daily_incorrect.append(stats['incorrect'])
+                current_date += timedelta(days=1)
+            
+            return {
+                'by_category': by_category,
+                'by_difficulty': by_difficulty,
+                'daily_correct': daily_correct,
+                'daily_incorrect': daily_incorrect
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting math statistics from Google Sheets: {e}")
+            return {
+                'by_category': {},
+                'by_difficulty': {},
+                'daily_correct': [],
+                'daily_incorrect': []
+            }
